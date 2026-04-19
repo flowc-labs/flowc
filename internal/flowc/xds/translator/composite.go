@@ -203,7 +203,48 @@ func (t *CompositeTranslator) Translate(ctx context.Context, deployment *models.
 // generateRoutes creates route configurations from IR
 func (t *CompositeTranslator) generateRoutes(ctx context.Context, deployment *models.APIDeployment, irAPI *ir.API, clusters []*clusterv3.Cluster) ([]*routev3.RouteConfiguration, error) {
 	if irAPI == nil || len(irAPI.Endpoints) == 0 {
-		return []*routev3.RouteConfiguration{}, nil
+		// No spec or no endpoints — generate a catch-all prefix route
+		// that proxies everything under the context path to the upstream.
+		clusterNames := t.strategies.Deployment.GetClusterNames(deployment)
+		if len(clusterNames) == 0 {
+			return []*routev3.RouteConfiguration{}, nil
+		}
+		basePath := deployment.Context
+		if basePath == "" {
+			basePath = "/"
+		}
+		if basePath[0] != '/' {
+			basePath = "/" + basePath
+		}
+		routeAction := &routev3.RouteAction{
+			ClusterSpecifier: &routev3.RouteAction_Cluster{
+				Cluster: clusterNames[0],
+			},
+		}
+		if basePath != "/" {
+			routeAction.PrefixRewrite = "/"
+		}
+		routeName := t.getRouteConfigName(deployment)
+		routeConfig := &routev3.RouteConfiguration{
+			Name: routeName,
+			VirtualHosts: []*routev3.VirtualHost{
+				{
+					Name:    t.generateVirtualHostName(deployment),
+					Domains: t.getDomains(deployment),
+					Routes: []*routev3.Route{
+						{
+							Match: &routev3.RouteMatch{
+								PathSpecifier: &routev3.RouteMatch_Prefix{
+									Prefix: basePath,
+								},
+							},
+							Action: &routev3.Route_Route{Route: routeAction},
+						},
+					},
+				},
+			},
+		}
+		return []*routev3.RouteConfiguration{routeConfig}, nil
 	}
 
 	// Get cluster names from deployment strategy
