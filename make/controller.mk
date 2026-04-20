@@ -95,6 +95,22 @@ lint: golangci-lint ## Run golangci-lint
 lint-fix: golangci-lint ## Run golangci-lint with fixes
 	"$(GOLANGCI_LINT)" run --fix
 
+.PHONY: lint-config
+lint-config: golangci-lint ## Validate golangci-lint config
+	"$(GOLANGCI_LINT)" config verify
+
+##@ Verification
+
+.PHONY: verify-codegen
+verify-codegen: generate manifests ## Verify generated CRDs and DeepCopy are up-to-date
+	@if git --no-pager diff --quiet -- api/v1alpha1/zz_generated.deepcopy.go config/crd/; then \
+		echo "Codegen is up-to-date."; \
+	else \
+		echo "ERROR: Generated files are out of date. Run 'make generate manifests' and commit."; \
+		git --no-pager diff --stat -- api/v1alpha1/zz_generated.deepcopy.go config/crd/; \
+		exit 1; \
+	fi
+
 ##@ K8s Controller - E2E Tests
 
 KIND_CLUSTER ?= flowc-test-e2e

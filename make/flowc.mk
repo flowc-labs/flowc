@@ -44,6 +44,10 @@ test-cover-html: ## Generate HTML coverage report
 	$(GOCMD) tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report: coverage.html"
 
+.PHONY: test-race
+test-race: ## Run tests with race detector
+	$(GOTEST) -race ./...
+
 .PHONY: test-pkg
 test-pkg: ## Test a specific package (PKG=./pkg/bundle/...)
 	$(GOTEST) -v $(PKG)
