@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+const testGwName = "gw-a"
+
 func makeGateway(name string) *StoredResource {
 	spec := map[string]string{"nodeId": "node-" + name}
 	specJSON, _ := json.Marshal(spec)
@@ -25,7 +27,7 @@ func TestPut_New_RevisionIsOne(t *testing.T) {
 	s := NewMemoryStore()
 	ctx := context.Background()
 
-	res := makeGateway("gw-a")
+	res := makeGateway(testGwName)
 	out, err := s.Put(ctx, res, PutOptions{})
 	if err != nil {
 		t.Fatalf("Put: %v", err)
@@ -42,7 +44,7 @@ func TestPut_Existing_RevisionIncrements(t *testing.T) {
 	s := NewMemoryStore()
 	ctx := context.Background()
 
-	res := makeGateway("gw-a")
+	res := makeGateway(testGwName)
 	out1, _ := s.Put(ctx, res, PutOptions{})
 
 	res.SpecJSON = json.RawMessage(`{"nodeId":"node-updated"}`)
@@ -63,8 +65,8 @@ func TestPut_StaleRevision_Conflict(t *testing.T) {
 	s := NewMemoryStore()
 	ctx := context.Background()
 
-	res := makeGateway("gw-a")
-	s.Put(ctx, res, PutOptions{})
+	res := makeGateway(testGwName)
+	_, _ = s.Put(ctx, res, PutOptions{})
 
 	// Try to update with stale revision
 	_, err := s.Put(ctx, res, PutOptions{ExpectedRevision: 999})
@@ -80,10 +82,10 @@ func TestPut_OwnershipStrict_Conflict(t *testing.T) {
 	s := NewMemoryStore()
 	ctx := context.Background()
 
-	res := makeGateway("gw-a")
+	res := makeGateway(testGwName)
 	res.Meta.ManagedBy = "cli"
 	res.Meta.ConflictPolicy = ConflictStrict
-	s.Put(ctx, res, PutOptions{ManagedBy: "cli"})
+	_, _ = s.Put(ctx, res, PutOptions{ManagedBy: "cli"})
 
 	// Different writer, strict policy
 	_, err := s.Put(ctx, res, PutOptions{ManagedBy: "k8s-operator"})
@@ -99,10 +101,10 @@ func TestPut_OwnershipTakeover_OK(t *testing.T) {
 	s := NewMemoryStore()
 	ctx := context.Background()
 
-	res := makeGateway("gw-a")
+	res := makeGateway(testGwName)
 	res.Meta.ManagedBy = "cli"
 	res.Meta.ConflictPolicy = ConflictTakeover
-	s.Put(ctx, res, PutOptions{ManagedBy: "cli"})
+	_, _ = s.Put(ctx, res, PutOptions{ManagedBy: "cli"})
 
 	// Different writer, takeover policy
 	out, err := s.Put(ctx, res, PutOptions{ManagedBy: "k8s-operator"})
@@ -118,14 +120,14 @@ func TestGet_Exists(t *testing.T) {
 	s := NewMemoryStore()
 	ctx := context.Background()
 
-	res := makeGateway("gw-a")
-	s.Put(ctx, res, PutOptions{})
+	res := makeGateway(testGwName)
+	_, _ = s.Put(ctx, res, PutOptions{})
 
-	got, err := s.Get(ctx, ResourceKey{Kind: "Gateway", Name: "gw-a"})
+	got, err := s.Get(ctx, ResourceKey{Kind: "Gateway", Name: testGwName})
 	if err != nil {
 		t.Fatalf("Get: %v", err)
 	}
-	if got.Meta.Name != "gw-a" {
+	if got.Meta.Name != testGwName {
 		t.Errorf("expected name gw-a, got %s", got.Meta.Name)
 	}
 }
@@ -144,15 +146,15 @@ func TestDelete_Exists(t *testing.T) {
 	s := NewMemoryStore()
 	ctx := context.Background()
 
-	res := makeGateway("gw-a")
-	s.Put(ctx, res, PutOptions{})
+	res := makeGateway(testGwName)
+	_, _ = s.Put(ctx, res, PutOptions{})
 
-	err := s.Delete(ctx, ResourceKey{Kind: "Gateway", Name: "gw-a"}, DeleteOptions{})
+	err := s.Delete(ctx, ResourceKey{Kind: "Gateway", Name: testGwName}, DeleteOptions{})
 	if err != nil {
 		t.Fatalf("Delete: %v", err)
 	}
 
-	_, err = s.Get(ctx, ResourceKey{Kind: "Gateway", Name: "gw-a"})
+	_, err = s.Get(ctx, ResourceKey{Kind: "Gateway", Name: testGwName})
 	if !errors.Is(err, ErrNotFound) {
 		t.Error("resource should be gone after delete")
 	}
@@ -172,9 +174,9 @@ func TestList_KindFilter(t *testing.T) {
 	s := NewMemoryStore()
 	ctx := context.Background()
 
-	s.Put(ctx, makeGateway("gw-a"), PutOptions{})
-	s.Put(ctx, makeGateway("gw-b"), PutOptions{})
-	s.Put(ctx, makeGateway("gw-c"), PutOptions{})
+	_, _ = s.Put(ctx, makeGateway(testGwName), PutOptions{})
+	_, _ = s.Put(ctx, makeGateway("gw-b"), PutOptions{})
+	_, _ = s.Put(ctx, makeGateway("gw-c"), PutOptions{})
 
 	// List by kind
 	items, err := s.List(ctx, ListFilter{Kind: "Gateway"})
@@ -190,13 +192,13 @@ func TestList_LabelFilter(t *testing.T) {
 	s := NewMemoryStore()
 	ctx := context.Background()
 
-	gw := makeGateway("gw-a")
+	gw := makeGateway(testGwName)
 	gw.Meta.Labels = map[string]string{"env": "prod"}
-	s.Put(ctx, gw, PutOptions{})
+	_, _ = s.Put(ctx, gw, PutOptions{})
 
 	gw2 := makeGateway("gw-b")
 	gw2.Meta.Labels = map[string]string{"env": "staging"}
-	s.Put(ctx, gw2, PutOptions{})
+	_, _ = s.Put(ctx, gw2, PutOptions{})
 
 	items, _ := s.List(ctx, ListFilter{Labels: map[string]string{"env": "prod"}})
 	if len(items) != 1 {
@@ -215,15 +217,15 @@ func TestWatch_ReceivesPutAndDelete(t *testing.T) {
 	}
 
 	// Put
-	gw := makeGateway("gw-a")
-	s.Put(ctx, gw, PutOptions{})
+	gw := makeGateway(testGwName)
+	_, _ = s.Put(ctx, gw, PutOptions{})
 
 	select {
 	case event := <-ch:
 		if event.Type != WatchEventPut {
 			t.Errorf("expected PUT event, got %s", event.Type)
 		}
-		if event.Resource.Meta.Name != "gw-a" {
+		if event.Resource.Meta.Name != testGwName {
 			t.Errorf("expected gw-a, got %s", event.Resource.Meta.Name)
 		}
 	case <-ctx.Done():
@@ -231,7 +233,7 @@ func TestWatch_ReceivesPutAndDelete(t *testing.T) {
 	}
 
 	// Delete
-	s.Delete(ctx, ResourceKey{Kind: "Gateway", Name: "gw-a"}, DeleteOptions{})
+	_ = s.Delete(ctx, ResourceKey{Kind: "Gateway", Name: testGwName}, DeleteOptions{})
 
 	select {
 	case event := <-ch:
@@ -251,15 +253,15 @@ func TestWatch_FilterByKind(t *testing.T) {
 	ch, _ := s.Watch(ctx, WatchFilter{Kind: "Listener"})
 
 	// Put a gateway — should not match
-	s.Put(ctx, makeGateway("gw-a"), PutOptions{})
+	_, _ = s.Put(ctx, makeGateway(testGwName), PutOptions{})
 
 	// Put a listener — should match
-	listenerSpec, _ := json.Marshal(map[string]interface{}{"gatewayRef": "gw-a", "port": 8080})
+	listenerSpec, _ := json.Marshal(map[string]any{"gatewayRef": testGwName, "port": 8080})
 	listener := &StoredResource{
 		Meta:     StoreMeta{Kind: "Listener", Name: "http"},
 		SpecJSON: listenerSpec,
 	}
-	s.Put(ctx, listener, PutOptions{})
+	_, _ = s.Put(ctx, listener, PutOptions{})
 
 	select {
 	case event := <-ch:
@@ -276,21 +278,19 @@ func TestConcurrentAccess(t *testing.T) {
 	ctx := context.Background()
 	var wg sync.WaitGroup
 
-	for i := 0; i < 50; i++ {
-		wg.Add(1)
-		go func(n int) {
-			defer wg.Done()
-			name := "gw-a" // same resource, concurrent writes
+	for range 50 {
+		wg.Go(func() {
+			name := testGwName // same resource, concurrent writes
 			res := makeGateway(name)
-			s.Put(ctx, res, PutOptions{})
-			s.Get(ctx, ResourceKey{Kind: "Gateway", Name: name})
-			s.List(ctx, ListFilter{Kind: "Gateway"})
-		}(i)
+			_, _ = s.Put(ctx, res, PutOptions{})
+			_, _ = s.Get(ctx, ResourceKey{Kind: "Gateway", Name: name})
+			_, _ = s.List(ctx, ListFilter{Kind: "Gateway"})
+		})
 	}
 	wg.Wait()
 
 	// Verify consistency
-	got, err := s.Get(ctx, ResourceKey{Kind: "Gateway", Name: "gw-a"})
+	got, err := s.Get(ctx, ResourceKey{Kind: "Gateway", Name: testGwName})
 	if err != nil {
 		t.Fatalf("Get: %v", err)
 	}

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	listenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/flowc-labs/flowc/internal/flowc/ir"
@@ -112,7 +111,7 @@ func (t *CompositeTranslator) Translate(ctx context.Context, deployment *models.
 	}
 
 	if t.logger != nil {
-		t.logger.WithFields(map[string]interface{}{
+		t.logger.WithFields(map[string]any{
 			"translator":          t.Name(),
 			"deployment":          deployment.ID,
 			"deployment_strategy": t.strategies.Deployment.Name(),
@@ -129,7 +128,7 @@ func (t *CompositeTranslator) Translate(ctx context.Context, deployment *models.
 	}
 
 	if t.logger != nil {
-		t.logger.WithFields(map[string]interface{}{
+		t.logger.WithFields(map[string]any{
 			"clusters_count": len(clusters),
 		}).Debug("Generated clusters")
 	}
@@ -142,13 +141,13 @@ func (t *CompositeTranslator) Translate(ctx context.Context, deployment *models.
 	}
 
 	// PHASE 3: Generate routes using IR
-	routes, err := t.generateRoutes(ctx, deployment, irAPI, clusters)
+	routes, err := t.generateRoutes(deployment, irAPI)
 	if err != nil {
 		return nil, fmt.Errorf("route generation failed: %w", err)
 	}
 
 	if t.logger != nil {
-		t.logger.WithFields(map[string]interface{}{
+		t.logger.WithFields(map[string]any{
 			"route_configs_count": len(routes),
 		}).Debug("Generated routes")
 	}
@@ -167,7 +166,7 @@ func (t *CompositeTranslator) Translate(ctx context.Context, deployment *models.
 	// PHASE 5: Generate listeners (if needed)
 	var listeners []*listenerv3.Listener
 	if t.shouldGenerateListener(deployment) {
-		listeners = append(listeners, t.generateListener(deployment, routes))
+		listeners = append(listeners, t.generateListener(routes))
 	}
 
 	// PHASE 6: Apply rate limiting to listeners
@@ -185,7 +184,7 @@ func (t *CompositeTranslator) Translate(ctx context.Context, deployment *models.
 	}
 
 	if t.logger != nil {
-		t.logger.WithFields(map[string]interface{}{
+		t.logger.WithFields(map[string]any{
 			"clusters":  len(clusters),
 			"routes":    len(routes),
 			"listeners": len(listeners),
@@ -201,7 +200,7 @@ func (t *CompositeTranslator) Translate(ctx context.Context, deployment *models.
 }
 
 // generateRoutes creates route configurations from IR
-func (t *CompositeTranslator) generateRoutes(ctx context.Context, deployment *models.APIDeployment, irAPI *ir.API, clusters []*clusterv3.Cluster) ([]*routev3.RouteConfiguration, error) {
+func (t *CompositeTranslator) generateRoutes(deployment *models.APIDeployment, irAPI *ir.API) ([]*routev3.RouteConfiguration, error) {
 	if irAPI == nil || len(irAPI.Endpoints) == 0 {
 		// No spec or no endpoints — generate a catch-all prefix route
 		// that proxies everything under the context path to the upstream.
@@ -224,7 +223,7 @@ func (t *CompositeTranslator) generateRoutes(ctx context.Context, deployment *mo
 		if basePath != "/" {
 			routeAction.PrefixRewrite = "/"
 		}
-		routeName := t.getRouteConfigName(deployment)
+		routeName := t.getRouteConfigName()
 		routeConfig := &routev3.RouteConfiguration{
 			Name: routeName,
 			VirtualHosts: []*routev3.VirtualHost{
@@ -291,7 +290,7 @@ func (t *CompositeTranslator) generateRoutes(ctx context.Context, deployment *mo
 
 	// Create route configuration with environment-aware name
 	// Route config name must match what the listener expects: route_{listenerID}_{environmentName}
-	routeName := t.getRouteConfigName(deployment)
+	routeName := t.getRouteConfigName()
 	routeConfig := &routev3.RouteConfiguration{
 		Name: routeName,
 		VirtualHosts: []*routev3.VirtualHost{
@@ -308,7 +307,7 @@ func (t *CompositeTranslator) generateRoutes(ctx context.Context, deployment *mo
 
 // getRouteConfigName returns the route configuration name that matches the listener's expectation.
 // When listeners/environments are created, they expect route configs named: route_{listenerID}_{environmentName}
-func (t *CompositeTranslator) getRouteConfigName(deployment *models.APIDeployment) string {
+func (t *CompositeTranslator) getRouteConfigName() string {
 	// If we have translation context, use the environment-aware naming
 	if t.translationContext != nil && t.translationContext.Listener != nil && t.translationContext.VirtualHost != nil {
 		return fmt.Sprintf("route_%s_%s", t.translationContext.Listener.ID, t.translationContext.VirtualHost.Name)
@@ -320,7 +319,7 @@ func (t *CompositeTranslator) getRouteConfigName(deployment *models.APIDeploymen
 
 // generateListener creates a listener with environment-aware SNI filter chains.
 // This requires translation context to be set via SetTranslationContext().
-func (t *CompositeTranslator) generateListener(deployment *models.APIDeployment, routes []*routev3.RouteConfiguration) *listenerv3.Listener {
+func (t *CompositeTranslator) generateListener(routes []*routev3.RouteConfiguration) *listenerv3.Listener {
 	// Translation context is required for environment-based deployments
 	if t.translationContext == nil || t.translationContext.VirtualHost == nil || t.translationContext.Listener == nil {
 		t.logger.Error("Translation context is required but not set; cannot generate listener")

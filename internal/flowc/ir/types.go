@@ -54,7 +54,7 @@ type API struct {
 	Servers []Server `json:"servers,omitempty" yaml:"servers,omitempty"`
 
 	// Extensions for API-specific features that don't fit the common model
-	Extensions map[string]interface{} `json:"extensions,omitempty" yaml:"extensions,omitempty"`
+	Extensions map[string]any `json:"extensions,omitempty" yaml:"extensions,omitempty"`
 }
 
 // APIMetadata contains metadata about the API
@@ -158,7 +158,7 @@ type Endpoint struct {
 	RateLimit *RateLimit `json:"rate_limit,omitempty" yaml:"rate_limit,omitempty"`
 
 	// Extensions for endpoint-specific features
-	Extensions map[string]interface{} `json:"extensions,omitempty" yaml:"extensions,omitempty"`
+	Extensions map[string]any `json:"extensions,omitempty" yaml:"extensions,omitempty"`
 }
 
 // EndpointType represents the type of endpoint
@@ -263,10 +263,10 @@ type Parameter struct {
 	Schema *DataType `json:"schema,omitempty" yaml:"schema,omitempty"`
 
 	// Default value
-	Default interface{} `json:"default,omitempty" yaml:"default,omitempty"`
+	Default any `json:"default,omitempty" yaml:"default,omitempty"`
 
 	// Example value
-	Example interface{} `json:"example,omitempty" yaml:"example,omitempty"`
+	Example any `json:"example,omitempty" yaml:"example,omitempty"`
 
 	// Deprecated flag
 	Deprecated bool `json:"deprecated,omitempty" yaml:"deprecated,omitempty"`
@@ -306,7 +306,7 @@ type DataModel struct {
 	AdditionalProperties bool `json:"additional_properties,omitempty" yaml:"additional_properties,omitempty"`
 
 	// Example value
-	Example interface{} `json:"example,omitempty" yaml:"example,omitempty"`
+	Example any `json:"example,omitempty" yaml:"example,omitempty"`
 
 	// Reference to another model (for composition)
 	Ref string `json:"ref,omitempty" yaml:"ref,omitempty"`
@@ -327,10 +327,10 @@ type Property struct {
 	Required bool `json:"required,omitempty" yaml:"required,omitempty"`
 
 	// Default value
-	Default interface{} `json:"default,omitempty" yaml:"default,omitempty"`
+	Default any `json:"default,omitempty" yaml:"default,omitempty"`
 
 	// Example value
-	Example interface{} `json:"example,omitempty" yaml:"example,omitempty"`
+	Example any `json:"example,omitempty" yaml:"example,omitempty"`
 
 	// Validation rules
 	Validation *Validation `json:"validation,omitempty" yaml:"validation,omitempty"`
@@ -351,7 +351,7 @@ type DataType struct {
 	Items *DataType `json:"items,omitempty" yaml:"items,omitempty"`
 
 	// Enum values
-	Enum []interface{} `json:"enum,omitempty" yaml:"enum,omitempty"`
+	Enum []any `json:"enum,omitempty" yaml:"enum,omitempty"`
 
 	// Nullable flag
 	Nullable bool `json:"nullable,omitempty" yaml:"nullable,omitempty"`

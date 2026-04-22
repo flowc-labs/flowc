@@ -7,6 +7,12 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	apiTypeREST     = "rest"
+	apiTypeGRPC     = "grpc"
+	specOpenAPIYAML = "openapi.yaml"
+)
+
 func TestCreateZip(t *testing.T) {
 	flowcYAML := []byte(`name: test-api
 version: v1.0.0
@@ -28,7 +34,7 @@ paths:
       summary: Test endpoint
 `)
 
-	zipData, err := CreateZip(flowcYAML, openapiYAML, "openapi.yaml")
+	zipData, err := CreateZip(flowcYAML, openapiYAML, specOpenAPIYAML)
 	if err != nil {
 		t.Fatalf("CreateZip failed: %v", err)
 	}
@@ -93,7 +99,7 @@ paths:
       summary: Test endpoint
 `)
 
-	zipData, err := CreateZip(flowcYAML, openapiYAML, "openapi.yaml")
+	zipData, err := CreateZip(flowcYAML, openapiYAML, specOpenAPIYAML)
 	if err != nil {
 		t.Fatalf("CreateZip failed: %v", err)
 	}
@@ -112,7 +118,7 @@ paths:
 		t.Errorf("Extracted openapi.yaml does not match original")
 	}
 
-	if specInfo.APIType != "rest" {
+	if specInfo.APIType != apiTypeREST {
 		t.Errorf("Expected API type 'rest', got %s", specInfo.APIType)
 	}
 }
@@ -139,7 +145,7 @@ paths:
       summary: Test endpoint
 `)
 
-	bundle := NewBundle(metadata, openapiData, "openapi.yaml", "rest")
+	bundle := NewBundle(metadata, openapiData, specOpenAPIYAML, apiTypeREST)
 	zipData, err := CreateZipFromBundle(bundle)
 	if err != nil {
 		t.Fatalf("CreateZipFromBundle failed: %v", err)
@@ -183,7 +189,7 @@ info:
   version: 1.0.0
 `)
 
-	zipData, err := CreateZip(flowcYAML, openapiYAML, "openapi.yaml")
+	zipData, err := CreateZip(flowcYAML, openapiYAML, specOpenAPIYAML)
 	if err != nil {
 		t.Fatalf("CreateZip failed: %v", err)
 	}
@@ -198,8 +204,8 @@ info:
 	}
 
 	expectedFiles := map[string]bool{
-		FlowCFileName:  false,
-		"openapi.yaml": false,
+		FlowCFileName:   false,
+		specOpenAPIYAML: false,
 	}
 
 	for _, file := range files {
@@ -224,17 +230,17 @@ func TestDetectAPIType(t *testing.T) {
 		want     string
 	}{
 		// REST/OpenAPI files
-		{"openapi.yaml", "openapi.yaml", "rest"},
-		{"openapi.yml", "openapi.yml", "rest"},
-		{"swagger.yaml", "swagger.yaml", "rest"},
-		{"swagger.yml", "swagger.yml", "rest"},
-		{"openapi.json", "openapi.json", "rest"},
-		{"swagger.json", "swagger.json", "rest"},
+		{specOpenAPIYAML, specOpenAPIYAML, apiTypeREST},
+		{"openapi.yml", "openapi.yml", apiTypeREST},
+		{"swagger.yaml", "swagger.yaml", apiTypeREST},
+		{"swagger.yml", "swagger.yml", apiTypeREST},
+		{"openapi.json", "openapi.json", apiTypeREST},
+		{"swagger.json", "swagger.json", apiTypeREST},
 
 		// gRPC files
-		{"service.proto", "service.proto", "grpc"},
-		{"user_service.proto", "user_service.proto", "grpc"},
-		{"api.proto", "api.proto", "grpc"},
+		{"service.proto", "service.proto", apiTypeGRPC},
+		{"user_service.proto", "user_service.proto", apiTypeGRPC},
+		{"api.proto", "api.proto", apiTypeGRPC},
 
 		// GraphQL files
 		{"schema.graphql", "schema.graphql", "graphql"},
@@ -267,7 +273,7 @@ func TestIsSpecFile(t *testing.T) {
 		fileName string
 		want     bool
 	}{
-		{"openapi.yaml", "openapi.yaml", true},
+		{specOpenAPIYAML, specOpenAPIYAML, true},
 		{"service.proto", "service.proto", true},
 		{"schema.graphql", "schema.graphql", true},
 		{"asyncapi.yaml", "asyncapi.yaml", true},
@@ -435,7 +441,7 @@ paths:
       summary: List users
 `)
 
-	zipData, err := CreateZip(flowcYAML, openapiYAML, "openapi.yaml")
+	zipData, err := CreateZip(flowcYAML, openapiYAML, specOpenAPIYAML)
 	if err != nil {
 		t.Fatalf("CreateZip failed: %v", err)
 	}
@@ -450,11 +456,11 @@ paths:
 		t.Errorf("Extracted flowc.yaml does not match original")
 	}
 
-	if specInfo.FileName != "openapi.yaml" {
+	if specInfo.FileName != specOpenAPIYAML {
 		t.Errorf("Expected spec file name 'openapi.yaml', got %s", specInfo.FileName)
 	}
 
-	if specInfo.APIType != "rest" {
+	if specInfo.APIType != apiTypeREST {
 		t.Errorf("Expected API type 'rest', got %s", specInfo.APIType)
 	}
 
@@ -496,7 +502,7 @@ service MyService {
 		t.Errorf("Expected spec file name 'service.proto', got %s", specInfo.FileName)
 	}
 
-	if specInfo.APIType != "grpc" {
+	if specInfo.APIType != apiTypeGRPC {
 		t.Errorf("Expected API type 'grpc', got %s", specInfo.APIType)
 	}
 
@@ -517,7 +523,7 @@ info:
   version: 1.0.0
 `)
 
-	zipData, err := CreateZip(flowcYAML, openapiYAML, "openapi.yaml")
+	zipData, err := CreateZip(flowcYAML, openapiYAML, specOpenAPIYAML)
 	if err != nil {
 		t.Fatalf("CreateZip failed: %v", err)
 	}
@@ -528,21 +534,21 @@ info:
 		t.Fatalf("GetSpecFileInfo failed: %v", err)
 	}
 
-	if specInfo.FileName != "openapi.yaml" {
+	if specInfo.FileName != specOpenAPIYAML {
 		t.Errorf("Expected spec file name 'openapi.yaml', got %s", specInfo.FileName)
 	}
 
-	if specInfo.APIType != "rest" {
+	if specInfo.APIType != apiTypeREST {
 		t.Errorf("Expected API type 'rest', got %s", specInfo.APIType)
 	}
 
 	// Get spec file info with preference
-	specInfo2, err := GetSpecFileInfo(zipData, "openapi.yaml")
+	specInfo2, err := GetSpecFileInfo(zipData, specOpenAPIYAML)
 	if err != nil {
 		t.Fatalf("GetSpecFileInfo with preference failed: %v", err)
 	}
 
-	if specInfo2.FileName != "openapi.yaml" {
+	if specInfo2.FileName != specOpenAPIYAML {
 		t.Errorf("Expected spec file name 'openapi.yaml', got %s", specInfo2.FileName)
 	}
 }
@@ -552,10 +558,10 @@ func TestNewBundle(t *testing.T) {
 		Name:    "grpc-api",
 		Version: "v1.0.0",
 		Context: "grpc/v1",
-		APIType: "grpc",
+		APIType: apiTypeGRPC,
 		Gateway: types.GatewayConfig{
-			NodeID:      "gateway-1",
-			Port:        8080,
+			NodeID:         "gateway-1",
+			Port:           8080,
 			VirtualHostRef: "prod",
 		},
 		Upstream: types.UpstreamConfig{
@@ -568,9 +574,9 @@ func TestNewBundle(t *testing.T) {
 package myapi.v1;
 `)
 
-	bundle := NewBundle(metadata, protoData, "service.proto", "grpc")
+	bundle := NewBundle(metadata, protoData, "service.proto", apiTypeGRPC)
 
-	if bundle.APIType != "grpc" {
+	if bundle.APIType != apiTypeGRPC {
 		t.Errorf("Expected API type 'grpc', got %s", bundle.APIType)
 	}
 
@@ -597,7 +603,7 @@ func TestValidateZip_MultipleAPITypes(t *testing.T) {
 version: v1.0.0
 `),
 			specData: []byte(`openapi: 3.0.0`),
-			specFile: "openapi.yaml",
+			specFile: specOpenAPIYAML,
 			wantErr:  false,
 		},
 		{

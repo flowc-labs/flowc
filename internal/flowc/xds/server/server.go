@@ -72,7 +72,7 @@ func (s *XDSServer) Start() error {
 		return fmt.Errorf("failed to listen on port %d: %w", s.port, err)
 	}
 
-	s.logger.WithFields(map[string]interface{}{"port": s.port}).Info("Starting XDS server")
+	s.logger.WithFields(map[string]any{"port": s.port}).Info("Starting XDS server")
 
 	// Start serving
 	if err := s.grpcServer.Serve(lis); err != nil {
@@ -101,7 +101,7 @@ func (s *XDSServer) GetLogger() *logger.EnvoyLogger {
 // InitializeDefaultListener creates the initial snapshot with a default listener
 // This should be called once for each node ID before any deployments
 func (s *XDSServer) InitializeDefaultListener(nodeID string, listenerPort uint32) error {
-	s.logger.WithFields(map[string]interface{}{
+	s.logger.WithFields(map[string]any{
 		"nodeID":       nodeID,
 		"listenerPort": listenerPort,
 	}).Info("Initializing default listener for node")
@@ -128,7 +128,7 @@ func (s *XDSServer) InitializeDefaultListener(nodeID string, listenerPort uint32
 		return fmt.Errorf("failed to set initial snapshot: %w", err)
 	}
 
-	s.logger.WithFields(map[string]interface{}{
+	s.logger.WithFields(map[string]any{
 		"nodeID":       nodeID,
 		"listenerPort": listenerPort,
 		"routeName":    "flowc_default_route",

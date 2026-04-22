@@ -42,7 +42,7 @@ func (h *UploadHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "file field is required")
 		return
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	zipData, err := io.ReadAll(file)
 	if err != nil {
@@ -66,13 +66,13 @@ func (h *UploadHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 	meta := deploymentBundle.FlowCMetadata
 
 	// Create API resource spec
-	apiSpec := map[string]interface{}{
+	apiSpec := map[string]any{
 		"version":     meta.Version,
 		"description": meta.Description,
 		"context":     meta.Context,
 		"apiType":     meta.APIType,
 		"specContent": string(deploymentBundle.Spec),
-		"upstream": map[string]interface{}{
+		"upstream": map[string]any{
 			"host":    meta.Upstream.Host,
 			"port":    meta.Upstream.Port,
 			"scheme":  meta.Upstream.Scheme,
@@ -112,9 +112,9 @@ func (h *UploadHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
 	// If gateway config is present, create a Deployment resource too
 	if meta.Gateway.GatewayID != "" || meta.Gateway.NodeID != "" {
 		depName := fmt.Sprintf("%s-deploy", apiName)
-		depSpec := map[string]interface{}{
+		depSpec := map[string]any{
 			"apiRef": apiName,
-			"gateway": map[string]interface{}{
+			"gateway": map[string]any{
 				"name":     coalesce(meta.Gateway.GatewayID, meta.Gateway.NodeID),
 				"listener": fmt.Sprintf("port-%d", meta.Gateway.Port),
 			},

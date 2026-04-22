@@ -148,64 +148,65 @@ func NewJSONLoggerWithWriter(w io.Writer, level Level) *EnvoyLogger {
 
 // Debug logs a debug message
 func (l *EnvoyLogger) Debug(msg string) {
-	l.logWithSource(context.Background(), slog.LevelDebug, msg, 2)
+	l.logWithSource(context.Background(), slog.LevelDebug, msg)
 }
 
 // Debugf logs a debug message with formatting
-func (l *EnvoyLogger) Debugf(format string, args ...interface{}) {
-	l.logWithSource(context.Background(), slog.LevelDebug, fmt.Sprintf(format, args...), 2)
+func (l *EnvoyLogger) Debugf(format string, args ...any) {
+	l.logWithSource(context.Background(), slog.LevelDebug, fmt.Sprintf(format, args...))
 }
 
 // Info logs an info message
 func (l *EnvoyLogger) Info(msg string) {
-	l.logWithSource(context.Background(), slog.LevelInfo, msg, 2)
+	l.logWithSource(context.Background(), slog.LevelInfo, msg)
 }
 
 // Infof logs an info message with formatting
-func (l *EnvoyLogger) Infof(format string, args ...interface{}) {
-	l.logWithSource(context.Background(), slog.LevelInfo, fmt.Sprintf(format, args...), 2)
+func (l *EnvoyLogger) Infof(format string, args ...any) {
+	l.logWithSource(context.Background(), slog.LevelInfo, fmt.Sprintf(format, args...))
 }
 
 // Warn logs a warning message
 func (l *EnvoyLogger) Warn(msg string) {
-	l.logWithSource(context.Background(), slog.LevelWarn, msg, 2)
+	l.logWithSource(context.Background(), slog.LevelWarn, msg)
 }
 
 // Warnf logs a warning message with formatting
-func (l *EnvoyLogger) Warnf(format string, args ...interface{}) {
-	l.logWithSource(context.Background(), slog.LevelWarn, fmt.Sprintf(format, args...), 2)
+func (l *EnvoyLogger) Warnf(format string, args ...any) {
+	l.logWithSource(context.Background(), slog.LevelWarn, fmt.Sprintf(format, args...))
 }
 
 // Error logs an error message
 func (l *EnvoyLogger) Error(msg string) {
-	l.logWithSource(context.Background(), slog.LevelError, msg, 2)
+	l.logWithSource(context.Background(), slog.LevelError, msg)
 }
 
 // Errorf logs an error message with formatting
-func (l *EnvoyLogger) Errorf(format string, args ...interface{}) {
-	l.logWithSource(context.Background(), slog.LevelError, fmt.Sprintf(format, args...), 2)
+func (l *EnvoyLogger) Errorf(format string, args ...any) {
+	l.logWithSource(context.Background(), slog.LevelError, fmt.Sprintf(format, args...))
 }
 
 // Fatal logs a fatal message and exits
 func (l *EnvoyLogger) Fatal(msg string) {
-	l.logWithSource(context.Background(), slog.LevelError, msg, 2, "level", "FATAL")
+	l.logWithSource(context.Background(), slog.LevelError, msg, "level", "FATAL")
 	os.Exit(1)
 }
 
 // Fatalf logs a fatal message with formatting and exits
-func (l *EnvoyLogger) Fatalf(format string, args ...interface{}) {
-	l.logWithSource(context.Background(), slog.LevelError, fmt.Sprintf(format, args...), 2, "level", "FATAL")
+func (l *EnvoyLogger) Fatalf(format string, args ...any) {
+	l.logWithSource(context.Background(), slog.LevelError, fmt.Sprintf(format, args...), "level", "FATAL")
 	os.Exit(1)
 }
 
 // logWithSource logs a message with the correct source location
-func (l *EnvoyLogger) logWithSource(ctx context.Context, level slog.Level, msg string, skip int, args ...interface{}) {
+func (l *EnvoyLogger) logWithSource(ctx context.Context, level slog.Level, msg string, args ...any) {
 	if !l.logger.Enabled(ctx, level) {
 		return
 	}
 
+	// Callers(3): skip runtime.Callers, this frame, and the public logger method.
 	var pcs [1]uintptr
-	runtime.Callers(skip+1, pcs[:]) // +1 to account for this function
+	runtime.Callers(3, pcs[:])
 
 	r := slog.NewRecord(time.Now(), level, msg, pcs[0])
 	for i := 0; i < len(args); i += 2 {
@@ -218,7 +219,7 @@ func (l *EnvoyLogger) logWithSource(ctx context.Context, level slog.Level, msg s
 }
 
 // WithField adds a field to the logger
-func (l *EnvoyLogger) WithField(key string, value interface{}) *EnvoyLogger {
+func (l *EnvoyLogger) WithField(key string, value any) *EnvoyLogger {
 	return &EnvoyLogger{
 		logger:   l.logger.With(key, value),
 		level:    l.level,
@@ -227,8 +228,8 @@ func (l *EnvoyLogger) WithField(key string, value interface{}) *EnvoyLogger {
 }
 
 // WithFields adds multiple fields to the logger
-func (l *EnvoyLogger) WithFields(fields map[string]interface{}) *EnvoyLogger {
-	args := make([]interface{}, 0, len(fields)*2)
+func (l *EnvoyLogger) WithFields(fields map[string]any) *EnvoyLogger {
+	args := make([]any, 0, len(fields)*2)
 	for k, v := range fields {
 		args = append(args, k, v)
 	}

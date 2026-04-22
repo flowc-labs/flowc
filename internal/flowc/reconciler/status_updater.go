@@ -26,7 +26,7 @@ func (r *Reconciler) updateDeploymentStatus(ctx context.Context, depName string,
 	key := store.ResourceKey{Kind: "Deployment", Name: depName}
 	stored, err := r.store.Get(ctx, key)
 	if err != nil {
-		r.logger.WithFields(map[string]interface{}{
+		r.logger.WithFields(map[string]any{
 			"deployment": depName,
 			"error":      err.Error(),
 		}).Error("Failed to get deployment for status update")
@@ -36,7 +36,7 @@ func (r *Reconciler) updateDeploymentStatus(ctx context.Context, depName string,
 	// Unmarshal existing status (if any)
 	var status deploymentStatus
 	if stored.StatusJSON != nil {
-		json.Unmarshal(stored.StatusJSON, &status)
+		_ = json.Unmarshal(stored.StatusJSON, &status)
 	}
 
 	status.Phase = phase
@@ -68,7 +68,7 @@ func (r *Reconciler) updateDeploymentStatus(ctx context.Context, depName string,
 		ExpectedRevision: stored.Meta.Revision,
 	})
 	if err != nil {
-		r.logger.WithFields(map[string]interface{}{
+		r.logger.WithFields(map[string]any{
 			"deployment": depName,
 			"error":      err.Error(),
 		}).Warn("Failed to update deployment status (may have been modified)")
@@ -85,7 +85,7 @@ func (r *Reconciler) updateGatewayStatus(ctx context.Context, gwName string, pha
 
 	var status gatewayStatus
 	if stored.StatusJSON != nil {
-		json.Unmarshal(stored.StatusJSON, &status)
+		_ = json.Unmarshal(stored.StatusJSON, &status)
 	}
 
 	status.Phase = phase
@@ -105,9 +105,14 @@ func (r *Reconciler) updateGatewayStatus(ctx context.Context, gwName string, pha
 	}
 
 	stored.StatusJSON = statusJSON
-	r.store.Put(ctx, stored, store.PutOptions{
+	if _, err := r.store.Put(ctx, stored, store.PutOptions{
 		ExpectedRevision: stored.Meta.Revision,
-	})
+	}); err != nil {
+		r.logger.WithFields(map[string]any{
+			"gateway": gwName,
+			"error":   err.Error(),
+		}).Warn("Failed to update gateway status (may have been modified)")
+	}
 }
 
 // setCondition updates or adds a condition in a condition list.

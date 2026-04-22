@@ -16,7 +16,7 @@ GOLANGCI_LINT = $(LOCALBIN)/golangci-lint
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v5.8.1
 CONTROLLER_TOOLS_VERSION ?= v0.20.1
-GOLANGCI_LINT_VERSION ?= v2.8.0
+GOLANGCI_LINT_VERSION ?= v2.11.4
 
 ENVTEST_VERSION ?= $(shell v='$(call gomodver,sigs.k8s.io/controller-runtime)'; \
   [ -n "$$v" ] || { echo "Set ENVTEST_VERSION manually" >&2; exit 1; }; \
@@ -87,17 +87,25 @@ build-installer: manifests generate kustomize ## Generate consolidated install Y
 
 ##@ K8s Controller - Lint
 
+# Custom golangci-lint binary built from .custom-gcl.yml (includes module plugins like logcheck).
+CUSTOM_GCL = $(LOCALBIN)/custom-gcl
+
+.PHONY: custom-gcl
+custom-gcl: $(CUSTOM_GCL) ## Build custom golangci-lint binary with module plugins from .custom-gcl.yml
+$(CUSTOM_GCL): $(GOLANGCI_LINT) .custom-gcl.yml
+	"$(GOLANGCI_LINT)" custom
+
 .PHONY: lint
-lint: golangci-lint ## Run golangci-lint
-	"$(GOLANGCI_LINT)" run
+lint: custom-gcl ## Run golangci-lint (uses custom binary with module plugins)
+	"$(CUSTOM_GCL)" run
 
 .PHONY: lint-fix
-lint-fix: golangci-lint ## Run golangci-lint with fixes
-	"$(GOLANGCI_LINT)" run --fix
+lint-fix: custom-gcl ## Run golangci-lint with fixes
+	"$(CUSTOM_GCL)" run --fix
 
 .PHONY: lint-config
-lint-config: golangci-lint ## Validate golangci-lint config
-	"$(GOLANGCI_LINT)" config verify
+lint-config: custom-gcl ## Validate golangci-lint config
+	"$(CUSTOM_GCL)" config verify
 
 ##@ Verification
 

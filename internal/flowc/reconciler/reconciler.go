@@ -218,7 +218,7 @@ func (r *Reconciler) flushPending(ctx context.Context) {
 		}
 
 		if err != nil {
-			r.logger.WithFields(map[string]interface{}{
+			r.logger.WithFields(map[string]any{
 				"gateway": gwName,
 				"level":   work.level,
 				"error":   err.Error(),
@@ -248,13 +248,13 @@ func (r *Reconciler) fullReconcile(ctx context.Context) error {
 		return err
 	}
 
-	r.logger.WithFields(map[string]interface{}{
+	r.logger.WithFields(map[string]any{
 		"gateway_count": len(stored),
 	}).Info("Starting full reconcile")
 
 	for _, gw := range stored {
 		if err := r.reconcileGatewayFromStored(ctx, gw); err != nil {
-			r.logger.WithFields(map[string]interface{}{
+			r.logger.WithFields(map[string]any{
 				"gateway": gw.Meta.Name,
 				"error":   err.Error(),
 			}).Error("Gateway reconciliation failed during full reconcile")

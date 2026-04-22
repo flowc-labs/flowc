@@ -125,15 +125,17 @@ type RetryStrategyConfig struct {
 	Type string `yaml:"type" json:"type"`
 
 	// Retry settings (for custom type or to override presets)
-	MaxRetries    uint32 `yaml:"max_retries,omitempty" json:"max_retries,omitempty"`
-	RetryOn       string `yaml:"retry_on,omitempty" json:"retry_on,omitempty"`               // e.g., "5xx,reset,connect-failure"
-	PerTryTimeout string `yaml:"per_try_timeout,omitempty" json:"per_try_timeout,omitempty"` // e.g., "2s"
+	MaxRetries uint32 `yaml:"max_retries,omitempty" json:"max_retries,omitempty"`
+	// e.g., "5xx,reset,connect-failure"
+	RetryOn string `yaml:"retry_on,omitempty" json:"retry_on,omitempty"`
+	// e.g., "2s"
+	PerTryTimeout string `yaml:"per_try_timeout,omitempty" json:"per_try_timeout,omitempty"`
 
 	// Retry priority
 	RetriableStatusCodes []uint32 `yaml:"retriable_status_codes,omitempty" json:"retriable_status_codes,omitempty"`
 
-	// Retry budget
-	BudgetPercent float64 `yaml:"budget_percent,omitempty" json:"budget_percent,omitempty"` // Max % of requests that can be retried
+	// Retry budget — max % of requests that can be retried
+	BudgetPercent float64 `yaml:"budget_percent,omitempty" json:"budget_percent,omitempty"`
 }
 
 // RateLimitStrategyConfig configures rate limiting
@@ -169,10 +171,13 @@ type ObservabilityStrategyConfig struct {
 
 // TracingConfig configures distributed tracing
 type TracingConfig struct {
-	Enabled      bool    `yaml:"enabled" json:"enabled"`
-	Provider     string  `yaml:"provider,omitempty" json:"provider,omitempty"`           // zipkin, jaeger, datadog, opentelemetry
-	SamplingRate float64 `yaml:"sampling_rate,omitempty" json:"sampling_rate,omitempty"` // 0.0 to 1.0
-	Endpoint     string  `yaml:"endpoint,omitempty" json:"endpoint,omitempty"`           // Collector endpoint
+	Enabled bool `yaml:"enabled" json:"enabled"`
+	// zipkin, jaeger, datadog, opentelemetry
+	Provider string `yaml:"provider,omitempty" json:"provider,omitempty"`
+	// 0.0 to 1.0
+	SamplingRate float64 `yaml:"sampling_rate,omitempty" json:"sampling_rate,omitempty"`
+	// Collector endpoint
+	Endpoint string `yaml:"endpoint,omitempty" json:"endpoint,omitempty"`
 }
 
 // MetricsConfig configures metrics collection
@@ -242,7 +247,7 @@ type HTTPFilter struct {
 	Name string `yaml:"name" json:"name"`
 
 	// Configuration of the HTTP filter
-	Config map[string]interface{} `yaml:"config" json:"config"`
+	Config map[string]any `yaml:"config" json:"config"`
 }
 
 // APIDeployment represents a complete API deployment

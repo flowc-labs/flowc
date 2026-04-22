@@ -28,13 +28,13 @@ type APIServer struct {
 
 // NewAPIServer creates a new API server instance with the declarative resource store.
 // xdsPort is the gRPC xDS port used for bootstrap config generation.
-func NewAPIServer(port, xdsPort int, readTimeout, writeTimeout, idleTimeout time.Duration, resourceStore store.Store, logger *logger.EnvoyLogger) *APIServer {
+func NewAPIServer(port, xdsPort int, readTimeout, writeTimeout, idleTimeout time.Duration, resourceStore store.Store, log *logger.EnvoyLogger) *APIServer {
 	mux := http.NewServeMux()
 
 	s := &APIServer{
 		mux:          mux,
 		store:        resourceStore,
-		logger:       logger,
+		logger:       log,
 		port:         port,
 		xdsPort:      xdsPort,
 		readTimeout:  readTimeout,
@@ -122,12 +122,12 @@ func (s *APIServer) handleRoot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := map[string]interface{}{
+	response := map[string]any{
 		"service":     "FlowC Control Plane",
 		"version":     "3.0.0",
 		"description": "Declarative Envoy xDS control plane with reconciliation-based architecture",
 		"api_style":   "Flat K8s-style: PUT to create/update, GET/DELETE, POST /apply for bulk",
-		"endpoints": map[string]interface{}{
+		"endpoints": map[string]any{
 			"health": "GET /health",
 			"resources": map[string]string{
 				"gateways":        "/api/v1/gateways/{name}",
@@ -152,7 +152,7 @@ func (s *APIServer) handleRoot(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	_ = json.NewEncoder(w).Encode(response)
 }
 
 // corsMiddleware adds CORS headers to all responses.
@@ -182,7 +182,7 @@ func (s *APIServer) Start() error {
 		IdleTimeout:  s.idleTimeout,
 	}
 
-	s.logger.WithFields(map[string]interface{}{
+	s.logger.WithFields(map[string]any{
 		"port": s.port,
 	}).Info("Starting FlowC API server")
 

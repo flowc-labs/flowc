@@ -82,7 +82,7 @@ func DefaultParserRegistry() *ParserRegistry {
 	registry := NewParserRegistry()
 
 	// Register OpenAPI/REST parser
-	registry.Register(APITypeREST, NewOpenAPIParser())
+	_ = registry.Register(APITypeREST, NewOpenAPIParser())
 
 	// Future parsers will be registered here:
 	// registry.Register(APITypeGRPC, NewProtobufParser())
@@ -108,7 +108,7 @@ type ParseOptions struct {
 	IncludeExtensions bool
 
 	// Custom context data
-	Context map[string]interface{}
+	Context map[string]any
 }
 
 // DefaultParseOptions returns default parsing options
@@ -118,6 +118,6 @@ func DefaultParseOptions() *ParseOptions {
 		Validate:          true,
 		IncludeExamples:   true,
 		IncludeExtensions: true,
-		Context:           make(map[string]interface{}),
+		Context:           make(map[string]any),
 	}
 }

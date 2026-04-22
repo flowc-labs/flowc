@@ -3,6 +3,8 @@ package ir
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -224,10 +226,8 @@ func (p *OpenAPIParser) parseOperation(path, method string, operation *openapi3.
 
 	// Parse extensions
 	if p.options.IncludeExtensions && len(operation.Extensions) > 0 {
-		endpoint.Extensions = make(map[string]interface{})
-		for key, value := range operation.Extensions {
-			endpoint.Extensions[key] = value
-		}
+		endpoint.Extensions = make(map[string]any)
+		maps.Copy(endpoint.Extensions, operation.Extensions)
 	}
 
 	return endpoint
@@ -363,7 +363,7 @@ func (p *OpenAPIParser) parseResponses(responses *openapi3.Responses) []Response
 		if statusCode == "default" {
 			code = 0
 		} else {
-			fmt.Sscanf(statusCode, "%d", &code)
+			_, _ = fmt.Sscanf(statusCode, "%d", &code)
 		}
 
 		responseSpec := ResponseSpec{
@@ -749,13 +749,11 @@ func (p *OpenAPIParser) parseServers(spec *openapi3.T) []Server {
 }
 
 // parseExtensions extracts custom extensions
-func (p *OpenAPIParser) parseExtensions(spec *openapi3.T) map[string]interface{} {
-	extensions := make(map[string]interface{})
+func (p *OpenAPIParser) parseExtensions(spec *openapi3.T) map[string]any {
+	extensions := make(map[string]any)
 
 	if spec.Extensions != nil {
-		for key, value := range spec.Extensions {
-			extensions[key] = value
-		}
+		maps.Copy(extensions, spec.Extensions)
 	}
 
 	return extensions
@@ -773,10 +771,5 @@ func sanitizePath(path string) string {
 }
 
 func contains(slice []string, item string) bool {
-	for _, s := range slice {
-		if s == item {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(slice, item)
 }

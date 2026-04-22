@@ -45,7 +45,7 @@ func (r *ConfigResolver) Resolve(apiConfig *types.StrategyConfig) *types.Strateg
 	resolved.Observability = r.resolveObservability(apiConfig)
 
 	if r.logger != nil {
-		r.logger.WithFields(map[string]interface{}{
+		r.logger.WithFields(map[string]any{
 			"deployment_type": resolved.Deployment.Type,
 			"route_type":      resolved.RouteMatching.Type,
 			"lb_type":         resolved.LoadBalancing.Type,
@@ -166,7 +166,7 @@ func (f *StrategyFactory) CreateStrategySet(config *types.StrategyConfig, deploy
 	}
 
 	// Create deployment strategy
-	deploymentStrategy, err := f.createDeploymentStrategy(config.Deployment, deployment)
+	deploymentStrategy, err := f.createDeploymentStrategy(config.Deployment)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create deployment strategy: %w", err)
 	}
@@ -212,7 +212,7 @@ func (f *StrategyFactory) CreateStrategySet(config *types.StrategyConfig, deploy
 }
 
 // createDeploymentStrategy creates a deployment strategy from config
-func (f *StrategyFactory) createDeploymentStrategy(config *types.DeploymentStrategyConfig, deployment *models.APIDeployment) (DeploymentStrategy, error) {
+func (f *StrategyFactory) createDeploymentStrategy(config *types.DeploymentStrategyConfig) (DeploymentStrategy, error) {
 	if config == nil {
 		config = &types.DeploymentStrategyConfig{Type: "basic"}
 	}
@@ -295,6 +295,8 @@ func (f *StrategyFactory) createLoadBalancingStrategy(config *types.LoadBalancin
 }
 
 // createBaseLoadBalancingStrategy creates base strategy for locality-aware
+//
+//nolint:unparam // config reserved for future config-driven base-strategy selection
 func (f *StrategyFactory) createBaseLoadBalancingStrategy(config *types.LoadBalancingStrategyConfig) (LoadBalancingStrategy, error) {
 	// Default to round-robin for base
 	return NewRoundRobinLoadBalancingStrategy(), nil
@@ -332,6 +334,8 @@ func (f *StrategyFactory) createRetryStrategy(config *types.RetryStrategyConfig)
 }
 
 // createRateLimitStrategy creates a rate limiting strategy from config
+//
+//nolint:unparam // TODO: real implementations will surface construction errors
 func (f *StrategyFactory) createRateLimitStrategy(config *types.RateLimitStrategyConfig) (RateLimitStrategy, error) {
 	if config == nil {
 		config = &types.RateLimitStrategyConfig{Type: "none"}
@@ -349,6 +353,8 @@ func (f *StrategyFactory) createRateLimitStrategy(config *types.RateLimitStrateg
 }
 
 // createObservabilityStrategy creates an observability strategy from config
+//
+//nolint:unparam // TODO: real implementations will surface construction errors
 func (f *StrategyFactory) createObservabilityStrategy(config *types.ObservabilityStrategyConfig) (ObservabilityStrategy, error) {
 	if config == nil {
 		return &NoOpObservabilityStrategy{}, nil

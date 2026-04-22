@@ -317,7 +317,11 @@ func main() {
 }
 
 // createCompositeTranslator creates a composite translator from configuration
-func createCompositeTranslator(config *types.StrategyConfig, deployment *models.APIDeployment, log *logger.EnvoyLogger) (*translator.CompositeTranslator, error) {
+func createCompositeTranslator(
+	config *types.StrategyConfig,
+	deployment *models.APIDeployment,
+	log *logger.EnvoyLogger,
+) (*translator.CompositeTranslator, error) {
 	// Resolve configuration (apply gateway defaults if needed)
 	// For this example, we're using API-specific config directly
 	resolver := translator.NewConfigResolver(nil, nil, log)

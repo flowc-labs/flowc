@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/flowc-labs/flowc/pkg/types"
@@ -78,13 +79,13 @@ func CreateZip(flowcYAML, specData []byte, specFileName string) ([]byte, error) 
 
 	// Add flowc.yaml
 	if err := addFileToZip(zipWriter, FlowCFileName, flowcYAML); err != nil {
-		zipWriter.Close()
+		_ = zipWriter.Close()
 		return nil, fmt.Errorf("failed to add flowc.yaml: %w", err)
 	}
 
 	// Add specification file
 	if err := addFileToZip(zipWriter, specFileName, specData); err != nil {
-		zipWriter.Close()
+		_ = zipWriter.Close()
 		return nil, fmt.Errorf("failed to add %s: %w", specFileName, err)
 	}
 
@@ -121,17 +122,13 @@ func DetectAPIType(fileName string) string {
 	}
 
 	// Check gRPC files
-	for _, grpcExt := range GRPCSpecExtensions {
-		if ext == grpcExt {
-			return "grpc"
-		}
+	if slices.Contains(GRPCSpecExtensions, ext) {
+		return "grpc"
 	}
 
 	// Check GraphQL files
-	for _, gqlExt := range GraphQLSpecExtensions {
-		if ext == gqlExt {
-			return "graphql"
-		}
+	if slices.Contains(GraphQLSpecExtensions, ext) {
+		return "graphql"
 	}
 
 	// Check AsyncAPI files (WebSocket/SSE)
@@ -158,23 +155,13 @@ func IsRESTSpecFile(fileName string) bool {
 // IsGRPCSpecFile checks if a file is a gRPC Protocol Buffer file
 func IsGRPCSpecFile(fileName string) bool {
 	ext := filepath.Ext(fileName)
-	for _, grpcExt := range GRPCSpecExtensions {
-		if ext == grpcExt {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(GRPCSpecExtensions, ext)
 }
 
 // IsGraphQLSpecFile checks if a file is a GraphQL schema file
 func IsGraphQLSpecFile(fileName string) bool {
 	ext := filepath.Ext(fileName)
-	for _, gqlExt := range GraphQLSpecExtensions {
-		if ext == gqlExt {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(GraphQLSpecExtensions, ext)
 }
 
 // IsAsyncAPISpecFile checks if a file is an AsyncAPI specification
@@ -240,7 +227,9 @@ func ValidateZip(zipData []byte) error {
 		return fmt.Errorf("bundle missing required file: %s", FlowCFileName)
 	}
 	if !hasSpec {
-		return fmt.Errorf("bundle missing API specification file (supported: openapi.yaml, *.proto, *.graphql, asyncapi.yaml)")
+		return fmt.Errorf(
+			"bundle missing API specification file (supported: openapi.yaml, *.proto, *.graphql, asyncapi.yaml)",
+		)
 	}
 
 	// Note: If multiple spec files are found, the bundle loader will handle selection
@@ -405,7 +394,7 @@ func extractFile(file *zip.File) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
-	defer rc.Close()
+	defer func() { _ = rc.Close() }()
 
 	data, err := io.ReadAll(rc)
 	if err != nil {

@@ -31,7 +31,7 @@ func main() {
 	}
 
 	// Log configuration details
-	log.WithFields(map[string]interface{}{
+	log.WithFields(map[string]any{
 		"api_port":              cfg.Server.APIPort,
 		"xds_port":              cfg.Server.XDSPort,
 		"default_listener_port": cfg.XDS.DefaultListenerPort,
@@ -40,7 +40,7 @@ func main() {
 	}).Info("Configuration loaded successfully")
 
 	// Create XDS server with configuration
-	log.WithFields(map[string]interface{}{
+	log.WithFields(map[string]any{
 		"port": cfg.Server.XDSPort,
 	}).Info("Creating XDS server")
 
@@ -81,7 +81,7 @@ func main() {
 	}()
 
 	// Create REST API server with resource store
-	log.WithFields(map[string]interface{}{
+	log.WithFields(map[string]any{
 		"port": cfg.Server.APIPort,
 	}).Info("Creating REST API server")
 
@@ -122,7 +122,7 @@ func main() {
 	// Give the servers a moment to start
 	time.Sleep(100 * time.Millisecond)
 
-	log.WithFields(map[string]interface{}{
+	log.WithFields(map[string]any{
 		"xds_port":     cfg.Server.XDSPort,
 		"api_port":     cfg.Server.APIPort,
 		"node_id":      cfg.XDS.DefaultNodeID,
@@ -135,7 +135,7 @@ func main() {
 
 	// Graceful shutdown
 	shutdownTimeout := cfg.GetShutdownTimeout()
-	log.WithFields(map[string]interface{}{
+	log.WithFields(map[string]any{
 		"timeout": shutdownTimeout.String(),
 	}).Info("Initiating graceful shutdown")
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/flowc-labs/flowc/internal/flowc/ir"
 )
@@ -223,11 +224,11 @@ func example3_InspectIR() {
 // Helper functions
 
 func repeat(s string, count int) string {
-	result := ""
-	for i := 0; i < count; i++ {
-		result += s
+	var result strings.Builder
+	for range count {
+		result.WriteString(s)
 	}
-	return result
+	return result.String()
 }
 
 func limitString(s string, maxLen int) string {

@@ -138,7 +138,7 @@ func TestJSONLogger(t *testing.T) {
 	}
 
 	// Parse JSON to verify structure
-	var logEntry map[string]interface{}
+	var logEntry map[string]any
 	if err := json.Unmarshal([]byte(lines[0]), &logEntry); err != nil {
 		t.Fatalf("Failed to parse JSON log output: %v\nOutput: %q", err, lines[0])
 	}
@@ -165,7 +165,7 @@ func TestTextLogger(t *testing.T) {
 	var buf bytes.Buffer
 	log := NewTextEnvoyLoggerWithWriter(&buf, InfoLevel)
 
-	log.EnvoyLogger.Info("test message")
+	log.Info("test message")
 
 	output := buf.String()
 
@@ -199,7 +199,7 @@ func TestWithField(t *testing.T) {
 		t.Fatal("No log output")
 	}
 
-	var logEntry map[string]interface{}
+	var logEntry map[string]any
 	if err := json.Unmarshal([]byte(lines[0]), &logEntry); err != nil {
 		t.Fatalf("Failed to parse JSON: %v", err)
 	}
@@ -219,7 +219,7 @@ func TestWithFields(t *testing.T) {
 	}
 	log := NewLogger(config)
 
-	fields := map[string]interface{}{
+	fields := map[string]any{
 		"user_id":    "123",
 		"request_id": "abc",
 		"count":      42,
@@ -233,7 +233,7 @@ func TestWithFields(t *testing.T) {
 		t.Fatal("No log output")
 	}
 
-	var logEntry map[string]interface{}
+	var logEntry map[string]any
 	if err := json.Unmarshal([]byte(lines[0]), &logEntry); err != nil {
 		t.Fatalf("Failed to parse JSON: %v", err)
 	}
@@ -270,7 +270,7 @@ func TestWithError(t *testing.T) {
 		t.Fatal("No log output")
 	}
 
-	var logEntry map[string]interface{}
+	var logEntry map[string]any
 	if err := json.Unmarshal([]byte(lines[0]), &logEntry); err != nil {
 		t.Fatalf("Failed to parse JSON: %v", err)
 	}
@@ -285,27 +285,27 @@ func TestDynamicLevelChange(t *testing.T) {
 	log := NewTextEnvoyLoggerWithWriter(&buf, InfoLevel)
 
 	// Debug should be filtered at INFO level
-	log.EnvoyLogger.Debug("should not appear")
+	log.Debug("should not appear")
 	if buf.String() != "" {
 		t.Error("Expected debug message to be filtered at INFO level")
 	}
 
 	// Change to DEBUG level
-	log.EnvoyLogger.SetLevel(DebugLevel)
+	log.SetLevel(DebugLevel)
 	buf.Reset()
 
 	// Debug should now appear
-	log.EnvoyLogger.Debug("should appear")
+	log.Debug("should appear")
 	if buf.String() == "" {
 		t.Error("Expected debug message to appear at DEBUG level")
 	}
 
 	// Change back to INFO level
-	log.EnvoyLogger.SetLevel(InfoLevel)
+	log.SetLevel(InfoLevel)
 	buf.Reset()
 
 	// Debug should be filtered again
-	log.EnvoyLogger.Debug("should not appear again")
+	log.Debug("should not appear again")
 	if buf.String() != "" {
 		t.Error("Expected debug message to be filtered after changing back to INFO level")
 	}
@@ -413,7 +413,7 @@ func TestSourceLocation(t *testing.T) {
 		t.Fatal("No log output")
 	}
 
-	var logEntry map[string]interface{}
+	var logEntry map[string]any
 	if err := json.Unmarshal([]byte(lines[0]), &logEntry); err != nil {
 		t.Fatalf("Failed to parse JSON: %v", err)
 	}
@@ -492,7 +492,7 @@ func BenchmarkBasicLogging(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		log.EnvoyLogger.Info("benchmark message")
+		log.Info("benchmark message")
 	}
 }
 
@@ -502,7 +502,7 @@ func BenchmarkStructuredLogging(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		log.EnvoyLogger.WithFields(map[string]interface{}{
+		log.EnvoyLogger.WithFields(map[string]any{
 			"user_id":    "123",
 			"request_id": "abc",
 			"count":      42,
@@ -517,7 +517,7 @@ func BenchmarkFilteredLogging(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		// This should be filtered out
-		log.EnvoyLogger.Debug("benchmark message")
+		log.Debug("benchmark message")
 	}
 }
 

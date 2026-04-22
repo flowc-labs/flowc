@@ -20,7 +20,7 @@ func main() {
 	fmt.Println("\n2. JSON Logger:")
 	log2 := logger.NewJSONLogger(logger.DebugLevel)
 	log2.Debug("This is a debug message")
-	log2.WithFields(map[string]interface{}{
+	log2.WithFields(map[string]any{
 		"user":    "admin",
 		"action":  "login",
 		"success": true,
@@ -54,7 +54,7 @@ func main() {
 
 	// Example 6: Logger with context
 	fmt.Println("\n6. Logger with Context:")
-	ctxLog := log1.WithFields(map[string]interface{}{
+	ctxLog := log1.WithFields(map[string]any{
 		"request_id": "12345",
 		"user_id":    "user123",
 	})

@@ -22,6 +22,26 @@ run-debug: flowc-run-debug ## Alias for flowc-run-debug
 .PHONY: test
 test: test-all ## Alias for test-all
 
+##@ Kubebuilder-standard aliases (used by e2e tests and tooling)
+
+.PHONY: docker-build
+docker-build: controller-docker-build ## Alias for controller-docker-build
+
+.PHONY: docker-push
+docker-push: controller-docker-push ## Alias for controller-docker-push
+
+.PHONY: install
+install: install-crds ## Alias for install-crds
+
+.PHONY: uninstall
+uninstall: uninstall-crds ## Alias for uninstall-crds
+
+.PHONY: deploy
+deploy: deploy-controller ## Alias for deploy-controller
+
+.PHONY: undeploy
+undeploy: undeploy-controller ## Alias for undeploy-controller
+
 .PHONY: clean
 clean: flowc-clean ## Clean all build artifacts
 	rm -f coverage.out coverage.html

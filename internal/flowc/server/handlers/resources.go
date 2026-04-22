@@ -78,7 +78,7 @@ func (h *ResourceHandler) HandlePut(kind string) http.HandlerFunc {
 		}
 
 		// Validate the typed resource
-		if err := validateResource(kind, name, envelope.Spec); err != nil {
+		if err := validateResource(name, envelope.Spec); err != nil {
 			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
@@ -96,7 +96,7 @@ func (h *ResourceHandler) HandlePut(kind string) http.HandlerFunc {
 				ConflictPolicy string `json:"conflictPolicy"`
 			} `json:"metadata"`
 		}
-		json.Unmarshal(body, &metaOverrides)
+		_ = json.Unmarshal(body, &metaOverrides)
 		if metaOverrides.Metadata.ConflictPolicy != "" {
 			meta.ConflictPolicy = metaOverrides.Metadata.ConflictPolicy
 		}
@@ -173,18 +173,18 @@ func (h *ResourceHandler) HandleList(kind string) http.HandlerFunc {
 			items = filterBySpec(items, specFilters)
 		}
 
-		crdItems := make([]map[string]interface{}, 0, len(items))
+		crdItems := make([]map[string]any, 0, len(items))
 		for _, item := range items {
-			crdItems = append(crdItems, map[string]interface{}{
+			crdItems = append(crdItems, map[string]any{
 				"apiVersion": "flowc.io/v1alpha1",
 				"kind":       kind,
 				"metadata":   store.StoreMetaToObjectMeta(item.Meta),
-				"spec":       json.RawMessage(item.SpecJSON),
-				"status":     json.RawMessage(item.StatusJSON),
+				"spec":       item.SpecJSON,
+				"status":     item.StatusJSON,
 			})
 		}
 
-		writeJSON(w, http.StatusOK, map[string]interface{}{
+		writeJSON(w, http.StatusOK, map[string]any{
 			"apiVersion": "flowc.io/v1alpha1",
 			"kind":       kind + "List",
 			"items":      crdItems,
@@ -212,7 +212,7 @@ func (h *ResourceHandler) HandleDelete(kind string) http.HandlerFunc {
 			return
 		}
 
-		writeJSON(w, http.StatusOK, map[string]interface{}{
+		writeJSON(w, http.StatusOK, map[string]any{
 			"message": fmt.Sprintf("%s %q deleted", kind, name),
 		})
 	}
@@ -295,7 +295,7 @@ func (h *ResourceHandler) HandleApply(w http.ResponseWriter, r *http.Request) {
 // HealthCheck handles GET /health
 func (h *ResourceHandler) HealthCheck(startTime time.Time) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, http.StatusOK, map[string]interface{}{
+		writeJSON(w, http.StatusOK, map[string]any{
 			"status":    "healthy",
 			"timestamp": time.Now(),
 			"version":   "3.0.0",
@@ -306,11 +306,11 @@ func (h *ResourceHandler) HealthCheck(startTime time.Time) http.HandlerFunc {
 
 // --- Helpers ---
 
-func validateResource(kind string, name string, specJSON json.RawMessage) error {
+func validateResource(name string, specJSON json.RawMessage) error {
 	if name == "" {
 		return fmt.Errorf("name is required")
 	}
-	var raw map[string]interface{}
+	var raw map[string]any
 	return json.Unmarshal(specJSON, &raw)
 }
 
@@ -320,7 +320,7 @@ func extractLabels(body []byte) map[string]string {
 			Labels map[string]string `json:"labels"`
 		} `json:"metadata"`
 	}
-	json.Unmarshal(body, &wrapper)
+	_ = json.Unmarshal(body, &wrapper)
 	return wrapper.Metadata.Labels
 }
 
@@ -330,7 +330,7 @@ func parseLabelsQuery(r *http.Request) map[string]string {
 		return nil
 	}
 	labels := make(map[string]string)
-	for _, pair := range strings.Split(labelStr, ",") {
+	for pair := range strings.SplitSeq(labelStr, ",") {
 		parts := strings.SplitN(pair, "=", 2)
 		if len(parts) == 2 {
 			labels[parts[0]] = parts[1]
@@ -373,7 +373,7 @@ var specFilterAliases = map[string]string{
 // then falls back to a nested alias (e.g., spec.gateway.name) for resources
 // like Deployments that use nested structures.
 func matchesSpecFilters(specJSON json.RawMessage, filters map[string]string) bool {
-	var spec map[string]interface{}
+	var spec map[string]any
 	if err := json.Unmarshal(specJSON, &spec); err != nil {
 		return false
 	}
@@ -395,11 +395,11 @@ func matchesSpecFilters(specJSON json.RawMessage, filters map[string]string) boo
 }
 
 // resolveNestedField resolves a dot-notation key (e.g., "gateway.name") against a map.
-func resolveNestedField(m map[string]interface{}, key string) interface{} {
+func resolveNestedField(m map[string]any, key string) any {
 	parts := strings.Split(key, ".")
-	var current interface{} = m
+	var current any = m
 	for _, part := range parts {
-		obj, ok := current.(map[string]interface{})
+		obj, ok := current.(map[string]any)
 		if !ok {
 			return nil
 		}
@@ -412,12 +412,12 @@ func resolveNestedField(m map[string]interface{}, key string) interface{} {
 }
 
 func writeResourceResponse(w http.ResponseWriter, status int, kind string, res *store.StoredResource) {
-	writeJSON(w, status, map[string]interface{}{
+	writeJSON(w, status, map[string]any{
 		"apiVersion": "flowc.io/v1alpha1",
 		"kind":       kind,
 		"metadata":   store.StoreMetaToObjectMeta(res.Meta),
-		"spec":       json.RawMessage(res.SpecJSON),
-		"status":     json.RawMessage(res.StatusJSON),
+		"spec":       res.SpecJSON,
+		"status":     res.StatusJSON,
 	})
 }
 
@@ -452,8 +452,8 @@ func writeError(w http.ResponseWriter, code int, msg string) {
 	writeJSON(w, code, ErrorResponse{Error: msg, Code: code})
 }
 
-func writeJSON(w http.ResponseWriter, code int, v interface{}) {
+func writeJSON(w http.ResponseWriter, code int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
-	json.NewEncoder(w).Encode(v)
+	_ = json.NewEncoder(w).Encode(v)
 }

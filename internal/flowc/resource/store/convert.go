@@ -1,6 +1,7 @@
 package store
 
 import (
+	"maps"
 	"strconv"
 	"time"
 
@@ -25,9 +26,7 @@ func StoreMetaToObjectMeta(sm StoreMeta) metav1.ObjectMeta {
 
 	// Build annotations from StoreMeta fields + existing annotations
 	annotations := make(map[string]string)
-	for k, v := range sm.Annotations {
-		annotations[k] = v
-	}
+	maps.Copy(annotations, sm.Annotations)
 	if sm.ManagedBy != "" {
 		annotations[AnnotationManagedBy] = sm.ManagedBy
 	}

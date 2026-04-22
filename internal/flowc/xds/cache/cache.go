@@ -22,10 +22,10 @@ type ConfigManager struct {
 }
 
 // NewConfigManager creates a new configuration manager
-func NewConfigManager(cache cachev3.SnapshotCache, logger *logger.EnvoyLogger) *ConfigManager {
+func NewConfigManager(cache cachev3.SnapshotCache, log *logger.EnvoyLogger) *ConfigManager {
 	return &ConfigManager{
 		cache:  cache,
-		logger: logger,
+		logger: log,
 	}
 }
 
@@ -35,7 +35,9 @@ func (cm *ConfigManager) UpdateSnapshot(nodeID string, snapshot *cachev3.Snapsho
 		return fmt.Errorf("snapshot inconsistent: %w", err)
 	}
 
-	cm.cache.SetSnapshot(context.Background(), nodeID, snapshot)
+	if err := cm.cache.SetSnapshot(context.Background(), nodeID, snapshot); err != nil {
+		return fmt.Errorf("failed to set snapshot: %w", err)
+	}
 	cm.logger.Infof("Updated snapshot for node %s", nodeID)
 	return nil
 }

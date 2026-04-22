@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"time"
 )
 
@@ -70,15 +71,11 @@ func (s *StoredResource) Clone() *StoredResource {
 	}
 	if s.Meta.Labels != nil {
 		c.Meta.Labels = make(map[string]string, len(s.Meta.Labels))
-		for k, v := range s.Meta.Labels {
-			c.Meta.Labels[k] = v
-		}
+		maps.Copy(c.Meta.Labels, s.Meta.Labels)
 	}
 	if s.Meta.Annotations != nil {
 		c.Meta.Annotations = make(map[string]string, len(s.Meta.Annotations))
-		for k, v := range s.Meta.Annotations {
-			c.Meta.Annotations[k] = v
-		}
+		maps.Copy(c.Meta.Annotations, s.Meta.Annotations)
 	}
 	return c
 }

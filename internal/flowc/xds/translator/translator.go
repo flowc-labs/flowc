@@ -24,15 +24,15 @@ type XDSResources struct {
 type Translator interface {
 	// Translate converts a deployment into xDS resources
 	// deployment: The persisted APIDeployment with metadata
-	// ir: The transient IR representation (not persisted)
+	// irAPI: The transient IR representation (not persisted)
 	// nodeID: Target Envoy node ID
-	Translate(ctx context.Context, deployment *models.APIDeployment, ir *ir.API, nodeID string) (*XDSResources, error)
+	Translate(ctx context.Context, deployment *models.APIDeployment, irAPI *ir.API, nodeID string) (*XDSResources, error)
 
 	// Name returns the name/type of this translator
 	Name() string
 
 	// Validate checks if the deployment is valid for this translator
-	Validate(deployment *models.APIDeployment, ir *ir.API) error
+	Validate(deployment *models.APIDeployment, irAPI *ir.API) error
 }
 
 // TranslatorOptions provides configuration options for translators
@@ -50,7 +50,7 @@ type TranslatorOptions struct {
 	EnableMetrics bool
 
 	// Additional custom options
-	CustomOptions map[string]interface{}
+	CustomOptions map[string]any
 }
 
 // DefaultTranslatorOptions returns default translator options
@@ -60,6 +60,6 @@ func DefaultTranslatorOptions() *TranslatorOptions {
 		EnableHTTPS:         false,
 		EnableTracing:       false,
 		EnableMetrics:       false,
-		CustomOptions:       make(map[string]interface{}),
+		CustomOptions:       make(map[string]any),
 	}
 }

@@ -50,7 +50,7 @@ type ExternalTranslatorConfig struct {
 	Headers map[string]string
 
 	// TLS configuration (for HTTPS)
-	TLSConfig interface{} // TODO: Add proper TLS config
+	TLSConfig any // TODO: Add proper TLS config
 
 	// Authentication token (if required)
 	AuthToken string
@@ -62,10 +62,10 @@ type ExternalTranslationRequest struct {
 	DeploymentID string `json:"deployment_id"`
 
 	// Metadata from FlowC
-	Metadata interface{} `json:"metadata"`
+	Metadata any `json:"metadata"`
 
 	// IR representation of the API
-	IR interface{} `json:"ir"`
+	IR any `json:"ir"`
 
 	// NodeID for xDS targeting
 	NodeID string `json:"node_id"`
@@ -143,7 +143,7 @@ func (t *ExternalTranslator) Translate(ctx context.Context, deployment *models.A
 	}
 
 	if t.logger != nil {
-		t.logger.WithFields(map[string]interface{}{
+		t.logger.WithFields(map[string]any{
 			"translator": t.Name(),
 			"endpoint":   t.endpoint,
 			"deployment": deployment.ID,
@@ -176,7 +176,7 @@ func (t *ExternalTranslator) Translate(ctx context.Context, deployment *models.A
 	}
 
 	if t.logger != nil {
-		t.logger.WithFields(map[string]interface{}{
+		t.logger.WithFields(map[string]any{
 			"clusters":  len(resources.Clusters),
 			"routes":    len(resources.Routes),
 			"listeners": len(resources.Listeners),
@@ -209,7 +209,7 @@ func (t *ExternalTranslator) callExternalService(ctx context.Context, req *Exter
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
-	defer httpResp.Body.Close()
+	defer func() { _ = httpResp.Body.Close() }()
 
 	// Check status code
 	if httpResp.StatusCode != http.StatusOK {

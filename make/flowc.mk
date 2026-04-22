@@ -73,13 +73,6 @@ check: fmt vet ## Run all code quality checks
 tidy: ## Tidy go modules
 	$(GOMOD) tidy
 
-##@ Code Generation
-
-.PHONY: generate-openapi
-generate-openapi: ## Generate OpenAPI spec from Go types
-	$(GOCMD) run ./cmd/apigen
-	@echo "OpenAPI spec generated: api/openapi.yaml"
-
 ##@ Envoy
 
 .PHONY: envoy

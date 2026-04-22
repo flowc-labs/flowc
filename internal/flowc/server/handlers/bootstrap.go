@@ -61,7 +61,7 @@ func (h *BootstrapHandler) HandleBootstrap(w http.ResponseWriter, r *http.Reques
 	w.Header().Set("Content-Type", "application/x-yaml")
 	w.Header().Set("Content-Disposition", "attachment; filename=envoy-bootstrap.yaml")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(bootstrapYAML))
+	_, _ = w.Write([]byte(bootstrapYAML))
 }
 
 // generateBasicBootstrapYAML generates a basic Envoy bootstrap YAML.

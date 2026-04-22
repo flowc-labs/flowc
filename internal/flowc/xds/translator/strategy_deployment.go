@@ -16,6 +16,8 @@ import (
 // These are the original translators refactored as deployment strategies
 // =============================================================================
 
+const defaultScheme = "http"
+
 // BasicDeploymentStrategy implements basic 1:1 deployment
 type BasicDeploymentStrategy struct {
 	options *TranslatorOptions
@@ -63,7 +65,7 @@ func (s *BasicDeploymentStrategy) GenerateClusters(ctx context.Context, deployme
 	upstream := deployment.Metadata.Upstream
 	scheme := upstream.Scheme
 	if scheme == "" {
-		scheme = "http"
+		scheme = defaultScheme
 	}
 
 	clusterName := s.generateClusterName(deployment.Name, deployment.Version)
@@ -138,7 +140,7 @@ func (s *CanaryDeploymentStrategy) GenerateClusters(ctx context.Context, deploym
 	upstream := deployment.Metadata.Upstream
 	scheme := upstream.Scheme
 	if scheme == "" {
-		scheme = "http"
+		scheme = defaultScheme
 	}
 
 	// Generate clusters for both baseline and canary
@@ -220,7 +222,7 @@ func (s *BlueGreenDeploymentStrategy) GenerateClusters(ctx context.Context, depl
 	upstream := deployment.Metadata.Upstream
 	scheme := upstream.Scheme
 	if scheme == "" {
-		scheme = "http"
+		scheme = defaultScheme
 	}
 
 	// Generate clusters for both active and standby

@@ -111,7 +111,7 @@ func (h *DeployHandler) buildInstructions(gwName, nodeID string, listenerPorts [
 		h.controlPlaneHost, h.apiPort, gwName)
 
 	// Build Docker port mappings from listeners.
-	var portMappings []string
+	portMappings := make([]string, 0, 1+len(listenerPorts))
 	portMappings = append(portMappings, fmt.Sprintf("-p %d:%d", adminPort, adminPort))
 	for _, port := range listenerPorts {
 		portMappings = append(portMappings, fmt.Sprintf("-p %d:%d", port, port))
@@ -124,19 +124,21 @@ func (h *DeployHandler) buildInstructions(gwName, nodeID string, listenerPorts [
 		envoyImage,
 	)
 
-	composeSnippet := fmt.Sprintf(`  %s:
+	var composeSnippet strings.Builder
+	fmt.Fprintf(&composeSnippet, `  %s:
     image: %s
     volumes:
       - ./envoy-bootstrap.yaml:/etc/envoy/envoy.yaml
     ports:`, gwName, envoyImage)
-	composeSnippet += fmt.Sprintf("\n      - \"%d:%d\"", adminPort, adminPort)
+	fmt.Fprintf(&composeSnippet, "\n      - \"%d:%d\"", adminPort, adminPort)
 	for _, port := range listenerPorts {
-		composeSnippet += fmt.Sprintf("\n      - \"%d:%d\"", port, port)
+		fmt.Fprintf(&composeSnippet, "\n      - \"%d:%d\"", port, port)
 	}
-	composeSnippet += "\n    network_mode: host"
+	composeSnippet.WriteString("\n    network_mode: host")
 
 	// K8s manifest
-	k8sManifest := fmt.Sprintf(`apiVersion: apps/v1
+	var k8sManifest strings.Builder
+	fmt.Fprintf(&k8sManifest, `apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: %s
@@ -163,10 +165,10 @@ spec:
 		gwName, gwName, envoyImage, adminPort)
 
 	for _, port := range listenerPorts {
-		k8sManifest += fmt.Sprintf("\n        - containerPort: %d\n          name: listener-%d", port, port)
+		fmt.Fprintf(&k8sManifest, "\n        - containerPort: %d\n          name: listener-%d", port, port)
 	}
 
-	k8sManifest += fmt.Sprintf(`
+	fmt.Fprintf(&k8sManifest, `
         volumeMounts:
         - name: bootstrap
           mountPath: /etc/envoy/envoy.yaml
@@ -185,10 +187,10 @@ spec:
 		Docker: DockerInstructions{
 			BootstrapURL:   bootstrapURL,
 			RunCommand:     dockerRun,
-			ComposeSnippet: composeSnippet,
+			ComposeSnippet: composeSnippet.String(),
 		},
 		Kubernetes: K8sInstructions{
-			Manifest:     k8sManifest,
+			Manifest:     k8sManifest.String(),
 			ApplyCommand: fmt.Sprintf("kubectl apply -f %s-deployment.yaml", gwName),
 		},
 	}

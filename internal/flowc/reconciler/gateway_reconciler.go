@@ -68,7 +68,7 @@ func (r *Reconciler) translateDeployment(
 		}
 	}
 	if listener == nil {
-		return nil, fmt.Errorf("Listener %q not found", listenerRef)
+		return nil, fmt.Errorf("listener %q not found", listenerRef)
 	}
 
 	// Resolve hostname: use first hostname from listener, or "*"
@@ -93,7 +93,7 @@ func (r *Reconciler) translateDeployment(
 	}
 
 	// Build models for the existing translator
-	modelDeployment := toModelDeployment(depStored.Meta.Name, depSpec, apiStored.Meta.Name, &apiSpec)
+	modelDeployment := toModelDeployment(depStored.Meta.Name, apiStored.Meta.Name, &apiSpec)
 	modelGateway := toModelGateway(gwStored.Meta.Name, gwSpec, gwStored.Meta.Labels)
 	modelListener := toModelListener(listener.name, &listener.spec)
 	modelVHost := &models.GatewayVirtualHost{
@@ -180,7 +180,7 @@ func (r *Reconciler) buildListeners(
 
 		xdsListener, err := listenerbuilder.CreateListenerWithFilterChains(config)
 		if err != nil {
-			r.logger.WithFields(map[string]interface{}{
+			r.logger.WithFields(map[string]any{
 				"listener": l.name,
 				"error":    err.Error(),
 			}).Error("Failed to create xDS listener")
@@ -203,7 +203,7 @@ func (r *Reconciler) reconcileGatewayFromStored(ctx context.Context, gwStored *s
 
 	nodeID := gwSpec.NodeID
 
-	r.logger.WithFields(map[string]interface{}{
+	r.logger.WithFields(map[string]any{
 		"gateway": gwStored.Meta.Name,
 		"nodeId":  nodeID,
 	}).Info("Reconciling gateway")
@@ -281,7 +281,7 @@ func (r *Reconciler) reconcileGatewayFromStored(ctx context.Context, gwStored *s
 	// Update gateway status
 	r.updateGatewayStatus(ctx, gwStored.Meta.Name, "Ready")
 
-	r.logger.WithFields(map[string]interface{}{
+	r.logger.WithFields(map[string]any{
 		"gateway":     gwStored.Meta.Name,
 		"deployments": len(deployments),
 		"clusters":    len(cacheDeployment.Clusters),
@@ -395,7 +395,7 @@ func (r *Reconciler) upsertDeploymentResources(ctx context.Context, gatewayName,
 
 	r.updateDeploymentStatus(ctx, depName, "Deployed", "")
 
-	r.logger.WithFields(map[string]interface{}{
+	r.logger.WithFields(map[string]any{
 		"gateway":    gatewayName,
 		"deployment": depName,
 		"clusters":   len(xds.Clusters),
@@ -415,7 +415,7 @@ func (r *Reconciler) removeDeploymentResources(ctx context.Context, gatewayName 
 
 // --- Conversion helpers: api/v1 types -> models types (for xDS translator) ---
 
-func toModelDeployment(depName string, depSpec *v1alpha1.DeploymentSpec, apiName string, apiSpec *v1alpha1.APISpec) *models.APIDeployment {
+func toModelDeployment(depName string, apiName string, apiSpec *v1alpha1.APISpec) *models.APIDeployment {
 	now := time.Now()
 	return &models.APIDeployment{
 		ID:      depName,
@@ -524,6 +524,6 @@ func normalizeBasePath(path string) string {
 	return path
 }
 
-func unmarshalJSON(data json.RawMessage, v interface{}) error {
+func unmarshalJSON(data json.RawMessage, v any) error {
 	return json.Unmarshal(data, v)
 }
