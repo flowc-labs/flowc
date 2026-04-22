@@ -3,7 +3,7 @@
 
 CONTROLLER_BINARY = flowc-controller
 CONTROLLER_CMD = ./cmd/flowc-controller
-CONTROLLER_IMG ?= flowc-controller:latest
+IMG ?= flowc-controller:latest
 
 ## Tool Binaries
 KUBECTL ?= kubectl
@@ -48,11 +48,11 @@ controller-run: generate fmt vet ## Run the K8s controller locally
 
 .PHONY: controller-docker-build
 controller-docker-build: ## Build controller Docker image
-	$(CONTAINER_TOOL) build -t ${CONTROLLER_IMG} -f build/controller/Dockerfile .
+	$(CONTAINER_TOOL) build -t ${IMG} -f build/controller/Dockerfile .
 
 .PHONY: controller-docker-push
 controller-docker-push: ## Push controller Docker image
-	$(CONTAINER_TOOL) push ${CONTROLLER_IMG}
+	$(CONTAINER_TOOL) push ${IMG}
 
 ##@ K8s Controller - Deployment
 
@@ -72,7 +72,7 @@ uninstall-crds: manifests kustomize ## Uninstall CRDs from K8s cluster
 
 .PHONY: deploy-controller
 deploy-controller: manifests kustomize ## Deploy controller to K8s cluster
-	cd config/manager && "$(KUSTOMIZE)" edit set image controller=${CONTROLLER_IMG}
+	cd config/manager && "$(KUSTOMIZE)" edit set image controller=${IMG}
 	"$(KUSTOMIZE)" build config/default | "$(KUBECTL)" apply -f -
 
 .PHONY: undeploy-controller
@@ -82,7 +82,7 @@ undeploy-controller: kustomize ## Undeploy controller from K8s cluster
 .PHONY: build-installer
 build-installer: manifests generate kustomize ## Generate consolidated install YAML
 	mkdir -p dist
-	cd config/manager && "$(KUSTOMIZE)" edit set image controller=${CONTROLLER_IMG}
+	cd config/manager && "$(KUSTOMIZE)" edit set image controller=${IMG}
 	"$(KUSTOMIZE)" build config/default > dist/install.yaml
 
 ##@ K8s Controller - Lint
