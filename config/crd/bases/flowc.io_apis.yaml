@@ -15,10 +15,10 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - jsonPath: '''.spec.version'''
+    - jsonPath: .spec.version
       name: Version
       type: string
-    - jsonPath: '''.spec.context'''
+    - jsonPath: .spec.context
       name: Context
       type: string
     name: v1alpha1

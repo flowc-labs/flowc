@@ -60,8 +60,8 @@ type DeploymentStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:printcolumn:name="API",type=string,JSONPath='.spec.apiRef'
-// +kubebuilder:printcolumn:name="Gateway",type=string,JSONPath='.spec.gateway.name'
+// +kubebuilder:printcolumn:name="API",type=string,JSONPath=`.spec.apiRef`
+// +kubebuilder:printcolumn:name="Gateway",type=string,JSONPath=`.spec.gateway.name`
 
 // Deployment is the Schema for the deployments API
 type Deployment struct {

@@ -15,10 +15,10 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - jsonPath: '''.spec.apiRef'''
+    - jsonPath: .spec.apiRef
       name: API
       type: string
-    - jsonPath: '''.spec.gateway.name'''
+    - jsonPath: .spec.gateway.name
       name: Gateway
       type: string
     name: v1alpha1

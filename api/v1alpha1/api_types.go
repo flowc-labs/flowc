@@ -70,8 +70,8 @@ type APIStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:printcolumn:name="Version",type=string,JSONPath='.spec.version'
-// +kubebuilder:printcolumn:name="Context",type=string,JSONPath='.spec.context'
+// +kubebuilder:printcolumn:name="Version",type=string,JSONPath=`.spec.version`
+// +kubebuilder:printcolumn:name="Context",type=string,JSONPath=`.spec.context`
 
 // API is the Schema for the apis API
 type API struct {

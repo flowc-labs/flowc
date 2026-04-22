@@ -15,10 +15,10 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - jsonPath: '''.spec.gatewayRef'''
+    - jsonPath: .spec.gatewayRef
       name: Gateway
       type: string
-    - jsonPath: '''.spec.port'''
+    - jsonPath: .spec.port
       name: Port
       type: integer
     name: v1alpha1

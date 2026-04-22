@@ -44,8 +44,8 @@ type GatewayStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:printcolumn:name="Node ID",type=string,JSONPath='.spec.nodeId'
-// +kubebuilder:printcolumn:name="Phase",type=string,JSONPath='.status.phase'
+// +kubebuilder:printcolumn:name="Node ID",type=string,JSONPath=`.spec.nodeId`
+// +kubebuilder:printcolumn:name="Phase",type=string,JSONPath=`.status.phase`
 
 // Gateway is the Schema for the gateways API
 type Gateway struct {

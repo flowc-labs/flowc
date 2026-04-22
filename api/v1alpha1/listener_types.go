@@ -61,8 +61,8 @@ type ListenerStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:printcolumn:name="Gateway",type=string,JSONPath='.spec.gatewayRef'
-// +kubebuilder:printcolumn:name="Port",type=integer,JSONPath='.spec.port'
+// +kubebuilder:printcolumn:name="Gateway",type=string,JSONPath=`.spec.gatewayRef`
+// +kubebuilder:printcolumn:name="Port",type=integer,JSONPath=`.spec.port`
 
 // Listener is the Schema for the listeners API
 type Listener struct {
