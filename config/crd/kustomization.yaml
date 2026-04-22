@@ -2,15 +2,13 @@
 # since it depends on service name and namespace that are out of this kustomize package.
 # It should be run by config/default
 resources:
-- bases/flowc.io.flowc.io_gateways.yaml
-- bases/flowc.io.flowc.io_listeners.yaml
-- bases/flowc.io.flowc.io_virtualhosts.yaml
-- bases/flowc.io.flowc.io_apis.yaml
-- bases/flowc.io.flowc.io_deployments.yaml
-- bases/flowc.io.flowc.io_gatewayprofiles.yaml
-- bases/flowc.io.flowc.io_gatewaypolicies.yaml
-- bases/flowc.io.flowc.io_apipolicies.yaml
-- bases/flowc.io.flowc.io_backendpolicies.yaml
+- bases/flowc.io_gateways.yaml
+- bases/flowc.io_listeners.yaml
+- bases/flowc.io_apis.yaml
+- bases/flowc.io_deployments.yaml
+- bases/flowc.io_gatewaypolicies.yaml
+- bases/flowc.io_apipolicies.yaml
+- bases/flowc.io_backendpolicies.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patches:
