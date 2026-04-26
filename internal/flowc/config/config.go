@@ -26,7 +26,100 @@ type Config struct {
 
 	// Feature flags
 	Features FeaturesConfig `yaml:"features" json:"features"`
+
+	// Store backend selection and per-backend settings
+	Store StoreConfig `yaml:"store" json:"store"`
+
+	// Controller configuration (K8s CRD controller)
+	Controller ControllerConfig `yaml:"controller" json:"controller"`
 }
+
+// StoreConfig selects the source-of-truth backend and carries per-backend
+// settings. The rest of the binary is backend-agnostic.
+type StoreConfig struct {
+	// Backend is one of: "memory", "kubernetes". Defaults to "memory".
+	Backend string `yaml:"backend" json:"backend"`
+
+	// Kubernetes contains settings applied when Backend == "kubernetes".
+	Kubernetes KubernetesStoreConfig `yaml:"kubernetes" json:"kubernetes"`
+}
+
+// KubernetesStoreConfig configures the K8s-backed store.
+type KubernetesStoreConfig struct {
+	// Namespace is the namespace the store reads and writes in. Defaults to "default".
+	Namespace string `yaml:"namespace" json:"namespace"`
+
+	// Kubeconfig is an optional explicit kubeconfig path. When empty, the
+	// standard in-cluster + KUBECONFIG discovery is used.
+	Kubeconfig string `yaml:"kubeconfig" json:"kubeconfig"`
+}
+
+// ControllerConfig gates the in-process K8s CRD controller and supplies the
+// knobs its reconcilers need. Only meaningful when store.backend=="kubernetes".
+type ControllerConfig struct {
+	// Enabled turns the K8s controllers on. Defaults to false.
+	Enabled bool `yaml:"enabled" json:"enabled"`
+
+	// Namespace is where provisioned Envoy resources (Deployment, Service,
+	// ConfigMap) are created. Defaults to store.kubernetes.namespace.
+	Namespace string `yaml:"namespace" json:"namespace"`
+
+	// LeaderElection controls whether reconcilers are gated by a lease.
+	// Mode 3 (single replica) leaves this off; Mode 4 (HA) turns it on.
+	LeaderElection LeaderElectionConfig `yaml:"leader_election" json:"leader_election"`
+
+	// XDS contains settings the controller bakes into the Envoy bootstrap
+	// so provisioned proxies know where to fetch config.
+	XDS ControllerXDSConfig `yaml:"xds" json:"xds"`
+
+	// Envoy describes the Envoy proxy image and runtime settings used when
+	// provisioning gateways.
+	Envoy EnvoyConfig `yaml:"envoy" json:"envoy"`
+
+	// MetricsAddr is the :port the controller-runtime metrics endpoint binds
+	// to. Empty disables it.
+	MetricsAddr string `yaml:"metrics_addr" json:"metrics_addr"`
+
+	// ProbeAddr is the :port the controller-runtime health probe endpoint
+	// binds to. Empty disables it.
+	ProbeAddr string `yaml:"probe_addr" json:"probe_addr"`
+}
+
+// LeaderElectionConfig configures the controller-runtime lease.
+type LeaderElectionConfig struct {
+	// Enabled turns leader election on. Default false (Mode 3).
+	Enabled bool `yaml:"enabled" json:"enabled"`
+	// LeaseName is the name of the coordination Lease.
+	LeaseName string `yaml:"lease_name" json:"lease_name"`
+	// Namespace holds the Lease. Defaults to the controller namespace.
+	Namespace string `yaml:"namespace" json:"namespace"`
+}
+
+// ControllerXDSConfig supplies xDS target information for provisioned Envoy
+// proxies. Address is a host:port reachable from the data plane pods.
+type ControllerXDSConfig struct {
+	// Address Envoy dials for xDS (e.g. "flowc.flowc-system.svc.cluster.local:18000").
+	Address string `yaml:"address" json:"address"`
+	// UseTLS switches the Envoy xDS cluster to TLS. Defaults to false (plaintext).
+	UseTLS bool `yaml:"use_tls" json:"use_tls"`
+}
+
+// EnvoyConfig describes the Envoy image and admin port used for provisioned
+// gateway data planes.
+type EnvoyConfig struct {
+	// Image is the Envoy container image reference.
+	Image string `yaml:"image" json:"image"`
+	// ImagePullPolicy overrides the default Always/IfNotPresent behavior.
+	ImagePullPolicy string `yaml:"image_pull_policy" json:"image_pull_policy"`
+	// AdminPort is the Envoy admin endpoint port (default 9901).
+	AdminPort int32 `yaml:"admin_port" json:"admin_port"`
+}
+
+// Store backend constants.
+const (
+	StoreBackendMemory     = "memory"
+	StoreBackendKubernetes = "kubernetes"
+)
 
 // ServerConfig contains API server configuration
 type ServerConfig struct {
@@ -280,6 +373,43 @@ func mergeWithDefaults(config *Config) *Config {
 
 	// Features defaults - keep as is (false by default is fine)
 	// Users explicitly enable features they want
+
+	// Store defaults
+	if config.Store.Backend == "" {
+		config.Store.Backend = defaults.Store.Backend
+	}
+	if config.Store.Kubernetes.Namespace == "" {
+		config.Store.Kubernetes.Namespace = defaults.Store.Kubernetes.Namespace
+	}
+
+	// Controller defaults
+	if config.Controller.Namespace == "" {
+		config.Controller.Namespace = config.Store.Kubernetes.Namespace
+	}
+	if config.Controller.LeaderElection.LeaseName == "" {
+		config.Controller.LeaderElection.LeaseName = defaults.Controller.LeaderElection.LeaseName
+	}
+	if config.Controller.LeaderElection.Namespace == "" {
+		config.Controller.LeaderElection.Namespace = config.Controller.Namespace
+	}
+	if config.Controller.XDS.Address == "" {
+		config.Controller.XDS.Address = defaults.Controller.XDS.Address
+	}
+	if config.Controller.Envoy.Image == "" {
+		config.Controller.Envoy.Image = defaults.Controller.Envoy.Image
+	}
+	if config.Controller.Envoy.ImagePullPolicy == "" {
+		config.Controller.Envoy.ImagePullPolicy = defaults.Controller.Envoy.ImagePullPolicy
+	}
+	if config.Controller.Envoy.AdminPort == 0 {
+		config.Controller.Envoy.AdminPort = defaults.Controller.Envoy.AdminPort
+	}
+	if config.Controller.MetricsAddr == "" {
+		config.Controller.MetricsAddr = defaults.Controller.MetricsAddr
+	}
+	if config.Controller.ProbeAddr == "" {
+		config.Controller.ProbeAddr = defaults.Controller.ProbeAddr
+	}
 
 	return config
 }

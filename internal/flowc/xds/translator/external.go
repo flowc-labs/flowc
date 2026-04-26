@@ -14,7 +14,7 @@ import (
 	listenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/flowc-labs/flowc/internal/flowc/ir"
-	"github.com/flowc-labs/flowc/internal/flowc/server/models"
+	"github.com/flowc-labs/flowc/internal/flowc/models"
 	"github.com/flowc-labs/flowc/pkg/logger"
 	"google.golang.org/protobuf/encoding/protojson"
 )

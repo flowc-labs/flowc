@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "flowc.fullname" . }}
+  labels:
+    {{- include "flowc.labels" . | nindent 4 }}
+  {{- with .Values.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: api
+      port: {{ .Values.service.ports.api }}
+      targetPort: api
+      protocol: TCP
+      appProtocol: http
+    - name: xds
+      port: {{ .Values.service.ports.xds }}
+      targetPort: xds
+      protocol: TCP
+      appProtocol: grpc
+  selector:
+    {{- include "flowc.selectorLabels" . | nindent 4 }}

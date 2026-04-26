@@ -1,0 +1,30 @@
+flowc is installed.
+
+Release:    {{ .Release.Name }}
+Namespace:  {{ .Release.Namespace }}
+Service:    {{ include "flowc.fullname" . }}.{{ .Release.Namespace }}.svc
+
+Endpoints (cluster-internal):
+  REST API:  http://{{ include "flowc.fullname" . }}.{{ .Release.Namespace }}.svc:{{ .Values.service.ports.api }}
+  xDS (ADS): {{ include "flowc.fullname" . }}.{{ .Release.Namespace }}.svc:{{ .Values.service.ports.xds }}  (gRPC)
+
+Quick checks:
+
+  kubectl -n {{ .Release.Namespace }} rollout status deploy/{{ include "flowc.fullname" . }}
+  kubectl -n {{ .Release.Namespace }} get gateways.flowc.io,listeners.flowc.io,apis.flowc.io
+
+Port-forward to hit flowc from your laptop:
+
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "flowc.fullname" . }} {{ .Values.service.ports.api }}:{{ .Values.service.ports.api }} {{ .Values.service.ports.xds }}:{{ .Values.service.ports.xds }}
+  curl http://localhost:{{ .Values.service.ports.api }}/health
+
+Point an Envoy data-plane pod at flowc via this xDS address (already baked
+into the config if you use flowc's own Gateway CR -> Envoy provisioning):
+
+  {{ include "flowc.fullname" . }}.{{ .Release.Namespace }}.svc:{{ .Values.service.ports.xds }}
+
+{{- if not .Values.config.controller.leader_election.enabled }}
+
+NOTE: leader election is disabled. For HA (replicaCount > 1) set
+      config.controller.leader_election.enabled=true.
+{{- end }}

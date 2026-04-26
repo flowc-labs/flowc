@@ -1,0 +1,19 @@
+apiVersion: flowc.io/v1alpha1
+kind: APIPolicy
+metadata:
+  labels:
+    app.kubernetes.io/name: flowc
+    app.kubernetes.io/managed-by: kustomize
+  name: apipolicy-sample
+spec:
+  targetRef:
+    kind: API
+    name: api-sample
+  defaults:
+    entry:
+      cors:
+        allowOrigins:
+          - "*"
+        allowMethods:
+          - GET
+          - POST

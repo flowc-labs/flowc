@@ -1,0 +1,81 @@
+# FlowC Control Plane — Mode 3 (Kubernetes, non-HA)
+#
+# In this mode the K8s API is the source of truth: kubectl apply and the REST
+# API both land in the same CRDs. An informer cache projects the current state
+# into the in-process Store, the reconciler rebuilds xDS snapshots as events
+# arrive, and Envoy streams config as usual.
+#
+# Copy this file to flowc-config.yaml (or set FLOWC_CONFIG=...) to use it.
+
+server:
+  api_port: 8080
+  xds_port: 18000
+  read_timeout: "30s"
+  write_timeout: "30s"
+  idle_timeout: "60s"
+  graceful_shutdown: true
+  shutdown_timeout: "10s"
+
+xds:
+  default_listener_port: 9095
+  default_node_id: "test-envoy-node"
+  snapshot_cache:
+    ads: true
+  grpc:
+    keepalive_time: "30s"
+    keepalive_timeout: "5s"
+    keepalive_min_time: "5s"
+    keepalive_permit_without_stream: true
+
+# Source of truth: Kubernetes CRDs.
+# Reads (Get/List/Watch) are served from the in-process informer cache.
+# Writes (Put/Delete) go to the K8s API; the cache updates via informer
+# events and fans out Watch events to subscribers (e.g. the xDS reconciler).
+store:
+  backend: kubernetes
+  kubernetes:
+    # Namespace the informer watches and writes target.
+    namespace: default
+    # Optional explicit kubeconfig path. Leave empty to use the standard
+    # in-cluster → $KUBECONFIG → ~/.kube/config discovery.
+    kubeconfig: ""
+
+# In-process K8s CRD controllers. When enabled, the GatewayReconciler
+# provisions an Envoy Deployment + Service + bootstrap ConfigMap for each
+# Gateway CR, writes Gateway.status, and cleans up via owner references on
+# deletion.
+controller:
+  enabled: true
+  # Namespace where Envoy proxies are provisioned. Defaults to store.kubernetes.namespace.
+  namespace: default
+  # Leader election is off for Mode 3 (single replica). Turn on for Mode 4.
+  leader_election:
+    enabled: false
+    lease_name: flowc-controller
+  # xDS address embedded in each Envoy proxy's bootstrap config. Must be
+  # reachable from data plane pods — typically the in-cluster Service name
+  # (flowc.<namespace>.svc.cluster.local:18000).
+  xds:
+    address: "flowc:18000"
+    use_tls: false
+  envoy:
+    image: "envoyproxy/envoy:v1.37-latest"
+    image_pull_policy: "IfNotPresent"
+    admin_port: 9901
+  metrics_addr: "0"
+  probe_addr: ":8081"
+
+logging:
+  level: "info"
+  format: "json"
+  output: "stdout"
+  structured: true
+  enable_caller: false
+  enable_stacktrace: false
+
+features:
+  external_translators: true
+  openapi_validation: true
+  metrics: false
+  tracing: false
+  rate_limiting: false

@@ -77,5 +77,29 @@ func Default() *Config {
 			Tracing:             false,
 			RateLimiting:        false,
 		},
+		Store: StoreConfig{
+			Backend: StoreBackendMemory,
+			Kubernetes: KubernetesStoreConfig{
+				Namespace: "default",
+			},
+		},
+		Controller: ControllerConfig{
+			Enabled:   false,
+			Namespace: "",
+			LeaderElection: LeaderElectionConfig{
+				Enabled:   false,
+				LeaseName: "flowc-controller",
+			},
+			XDS: ControllerXDSConfig{
+				Address: "flowc:18000",
+			},
+			Envoy: EnvoyConfig{
+				Image:           "envoyproxy/envoy:v1.31-latest",
+				ImagePullPolicy: "IfNotPresent",
+				AdminPort:       9901,
+			},
+			MetricsAddr: "0",
+			ProbeAddr:   ":8081",
+		},
 	}
 }

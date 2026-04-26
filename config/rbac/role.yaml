@@ -1,11 +1,88 @@
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  labels:
-    app.kubernetes.io/name: flowc
-    app.kubernetes.io/managed-by: kustomize
   name: manager-role
 rules:
-- apiGroups: [""]
-  resources: ["pods"]
-  verbs: ["get", "list", "watch"]
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  - services
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - flowc.io
+  resources:
+  - apipolicies
+  - apis
+  - backendpolicies
+  - deployments
+  - gatewaypolicies
+  - gateways
+  - listeners
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - flowc.io
+  resources:
+  - apipolicies/status
+  - apis/status
+  - backendpolicies/status
+  - deployments/status
+  - gatewaypolicies/status
+  - gateways/status
+  - listeners/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - flowc.io
+  resources:
+  - gateways/finalizers
+  verbs:
+  - update

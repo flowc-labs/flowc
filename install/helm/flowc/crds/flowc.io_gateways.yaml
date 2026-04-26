@@ -1,0 +1,311 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.20.1
+  name: gateways.flowc.io
+spec:
+  group: flowc.io
+  names:
+    kind: Gateway
+    listKind: GatewayList
+    plural: gateways
+    singular: gateway
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.nodeId
+      name: Node ID
+      type: string
+    - jsonPath: .status.phase
+      name: Phase
+      type: string
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: Gateway is the Schema for the gateways API
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: spec defines the desired state of Gateway
+            properties:
+              defaults:
+                description: defaults are optional strategy defaults for APIs deployed
+                  to this gateway.
+                properties:
+                  deployment:
+                    description: deployment configures the deployment strategy (basic,
+                      canary, blue-green).
+                    properties:
+                      blueGreen:
+                        description: blueGreen holds blue-green-specific configuration.
+                        properties:
+                          activeVersion:
+                            description: activeVersion is the currently serving version.
+                            type: string
+                          standbyVersion:
+                            description: standbyVersion is the version ready to switch
+                              to.
+                            type: string
+                        type: object
+                      canary:
+                        description: canary holds canary-specific configuration.
+                        properties:
+                          canaryWeight:
+                            description: canaryWeight is the percentage of traffic
+                              routed to the canary (0-100).
+                            maximum: 100
+                            minimum: 0
+                            type: integer
+                        type: object
+                      type:
+                        description: 'type is the deployment strategy: basic, canary,
+                          blue-green.'
+                        enum:
+                        - basic
+                        - canary
+                        - blue-green
+                        type: string
+                    required:
+                    - type
+                    type: object
+                  loadBalancing:
+                    description: loadBalancing configures load balancing behavior.
+                    properties:
+                      hashOn:
+                        description: 'hashOn selects the hash key for consistent-hash:
+                          header, cookie, source-ip.'
+                        type: string
+                      headerName:
+                        description: headerName is the header to hash on (when hashOn=header).
+                        type: string
+                      healthCheck:
+                        description: healthCheck configures active health checking.
+                        properties:
+                          enabled:
+                            description: enabled activates health checking.
+                            type: boolean
+                          expectedStatus:
+                            description: expectedStatus is the expected HTTP status
+                              code.
+                            format: int32
+                            type: integer
+                          interval:
+                            description: interval is the health check interval (e.g.,
+                              "10s").
+                            type: string
+                          path:
+                            description: path is the HTTP path for health checks.
+                            type: string
+                          timeout:
+                            description: timeout is the health check timeout (e.g.,
+                              "5s").
+                            type: string
+                        type: object
+                      type:
+                        description: 'type is the LB algorithm: round-robin, least-request,
+                          random, consistent-hash, locality-aware.'
+                        enum:
+                        - round-robin
+                        - least-request
+                        - random
+                        - consistent-hash
+                        - locality-aware
+                        type: string
+                    required:
+                    - type
+                    type: object
+                  observability:
+                    description: observability configures tracing, metrics, and logging.
+                    properties:
+                      accessLogs:
+                        description: accessLogs configures access logging.
+                        properties:
+                          enabled:
+                            description: enabled activates access logging.
+                            type: boolean
+                          format:
+                            description: 'format is the log format: json or text.'
+                            enum:
+                            - json
+                            - text
+                            type: string
+                          path:
+                            description: path is the log output path (stdout, stderr,
+                              or file path).
+                            type: string
+                        type: object
+                    type: object
+                  rateLimit:
+                    description: rateLimit configures rate limiting.
+                    properties:
+                      burstSize:
+                        description: burstSize is the burst allowance above the rate
+                          limit.
+                        format: int32
+                        type: integer
+                      requestsPerMinute:
+                        description: requestsPerMinute is the rate limit threshold.
+                        format: int32
+                        type: integer
+                      type:
+                        description: 'type is the rate limit scope: none, global,
+                          per-ip, per-user.'
+                        enum:
+                        - none
+                        - global
+                        - per-ip
+                        - per-user
+                        type: string
+                    required:
+                    - type
+                    type: object
+                  retry:
+                    description: retry configures retry behavior.
+                    properties:
+                      maxRetries:
+                        description: maxRetries is the maximum number of retries.
+                        format: int32
+                        type: integer
+                      perTryTimeout:
+                        description: perTryTimeout is the timeout per retry attempt
+                          (e.g., "2s").
+                        type: string
+                      retryOn:
+                        description: retryOn specifies which conditions trigger a
+                          retry (e.g., "5xx,reset,connect-failure").
+                        type: string
+                      type:
+                        description: 'type is the retry preset: none, conservative,
+                          aggressive, custom.'
+                        enum:
+                        - none
+                        - conservative
+                        - aggressive
+                        - custom
+                        type: string
+                    required:
+                    - type
+                    type: object
+                  routeMatching:
+                    description: routeMatching configures how routes are matched.
+                    properties:
+                      caseSensitive:
+                        description: caseSensitive enables case-sensitive matching.
+                        type: boolean
+                      type:
+                        description: 'type is the matching strategy: prefix, exact,
+                          regex, header-versioned.'
+                        enum:
+                        - prefix
+                        - exact
+                        - regex
+                        - header-versioned
+                        type: string
+                      versionHeader:
+                        description: versionHeader is the header name for header-versioned
+                          routing.
+                        type: string
+                    required:
+                    - type
+                    type: object
+                type: object
+              nodeId:
+                description: nodeId is the Envoy node ID for xDS; must be unique across
+                  gateways.
+                type: string
+            required:
+            - nodeId
+            type: object
+          status:
+            description: status defines the observed state of Gateway
+            properties:
+              conditions:
+                description: conditions represent the current state of the Gateway.
+                items:
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              phase:
+                description: 'phase is the current lifecycle phase: Pending, Ready,
+                  Error.'
+                type: string
+            type: object
+        required:
+        - spec
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

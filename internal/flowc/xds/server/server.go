@@ -32,8 +32,12 @@ func NewXDSServer(port int, keepaliveTime, keepaliveTimeout, keepaliveMinTime ti
 	// Create a snapshot cache
 	snapshotCache := cachev3.NewSnapshotCache(true, cachev3.IDHash{}, envoyLogger)
 
-	// Create the XDS server
-	xdsServer := serverv3.NewServer(context.Background(), snapshotCache, nil)
+	// Create the XDS server. Callbacks seed an empty snapshot for any node
+	// connecting before the reconciler has published one for it, so Envoy's
+	// /ready flips green on first connect instead of waiting out the full
+	// ADS initial-fetch timeout (and getting killed by the liveness probe
+	// in the chicken-and-egg startup case).
+	xdsServer := serverv3.NewServer(context.Background(), snapshotCache, seedEmptyOnConnect(snapshotCache, envoyLogger))
 
 	// Configure gRPC server with keepalive settings
 	grpcServer := grpc.NewServer(

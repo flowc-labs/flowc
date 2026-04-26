@@ -648,7 +648,7 @@ import (
     "fmt"
     "os"
     
-    "github.com/flowc-labs/flowc/internal/flowc/server/loader"
+    "github.com/flowc-labs/flowc/internal/flowc/providers/rest/loader"
 )
 
 func main() {

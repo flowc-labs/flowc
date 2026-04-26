@@ -811,7 +811,7 @@ package translator
 
 import (
     clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-    "github.com/flowc-labs/flowc/internal/flowc/server/models"
+    "github.com/flowc-labs/flowc/internal/flowc/models"
 )
 
 // CustomLoadBalancingStrategy implements a custom LB policy

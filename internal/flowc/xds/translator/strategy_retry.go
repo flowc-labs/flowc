@@ -4,7 +4,7 @@ import (
 	"time"
 
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	"github.com/flowc-labs/flowc/internal/flowc/server/models"
+	"github.com/flowc-labs/flowc/internal/flowc/models"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )

@@ -1,0 +1,101 @@
+{{- if .Values.rbac.create -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "flowc.fullname" . }}-manager
+  labels:
+    {{- include "flowc.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources:
+      - configmaps
+      - services
+    verbs: [create, delete, get, list, patch, update, watch]
+  - apiGroups: [""]
+    resources:
+      - events
+    verbs: [create, patch]
+  - apiGroups: [apps]
+    resources:
+      - deployments
+    verbs: [create, delete, get, list, patch, update, watch]
+  - apiGroups: [coordination.k8s.io]
+    resources:
+      - leases
+    verbs: [create, delete, get, list, patch, update, watch]
+  - apiGroups: [flowc.io]
+    resources:
+      - apipolicies
+      - apis
+      - backendpolicies
+      - deployments
+      - gatewaypolicies
+      - gateways
+      - listeners
+    verbs: [create, delete, get, list, patch, update, watch]
+  - apiGroups: [flowc.io]
+    resources:
+      - apipolicies/status
+      - apis/status
+      - backendpolicies/status
+      - deployments/status
+      - gatewaypolicies/status
+      - gateways/status
+      - listeners/status
+    verbs: [get, patch, update]
+  - apiGroups: [flowc.io]
+    resources:
+      - gateways/finalizers
+    verbs: [update]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "flowc.fullname" . }}-manager
+  labels:
+    {{- include "flowc.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "flowc.fullname" . }}-manager
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "flowc.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- if .Values.config.controller.leader_election.enabled }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "flowc.fullname" . }}-leader-election
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "flowc.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: [configmaps]
+    verbs: [get, list, watch, create, update, patch, delete]
+  - apiGroups: [coordination.k8s.io]
+    resources: [leases]
+    verbs: [get, list, watch, create, update, patch, delete]
+  - apiGroups: [""]
+    resources: [events]
+    verbs: [create, patch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "flowc.fullname" . }}-leader-election
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "flowc.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "flowc.fullname" . }}-leader-election
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "flowc.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}
+{{- end }}

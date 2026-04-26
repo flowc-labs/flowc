@@ -24,6 +24,20 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("logging config: %w", err)
 	}
 
+	// Validate store config
+	if err := c.Store.Validate(); err != nil {
+		return fmt.Errorf("store config: %w", err)
+	}
+
+	return nil
+}
+
+// Validate validates store configuration.
+func (s *StoreConfig) Validate() error {
+	validBackends := []string{StoreBackendMemory, StoreBackendKubernetes}
+	if !contains(validBackends, s.Backend) {
+		return fmt.Errorf("invalid backend: %q (must be one of: %s)", s.Backend, strings.Join(validBackends, ", "))
+	}
 	return nil
 }
 

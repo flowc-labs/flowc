@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/flowc-labs/flowc/internal/flowc/ir"
-	"github.com/flowc-labs/flowc/internal/flowc/server/models"
+	"github.com/flowc-labs/flowc/internal/flowc/models"
 	"github.com/flowc-labs/flowc/internal/flowc/xds/translator"
 	"github.com/flowc-labs/flowc/pkg/logger"
 	"github.com/flowc-labs/flowc/pkg/types"

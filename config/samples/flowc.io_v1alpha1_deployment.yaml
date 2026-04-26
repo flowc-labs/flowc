@@ -1,0 +1,12 @@
+apiVersion: flowc.io/v1alpha1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/name: flowc
+    app.kubernetes.io/managed-by: kustomize
+  name: deployment-sample
+spec:
+  apiRef: api-sample
+  gateway:
+    name: gateway-sample
+    listener: listener-sample

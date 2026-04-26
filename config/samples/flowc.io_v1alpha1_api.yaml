@@ -1,0 +1,13 @@
+apiVersion: flowc.io/v1alpha1
+kind: API
+metadata:
+  labels:
+    app.kubernetes.io/name: flowc
+    app.kubernetes.io/managed-by: kustomize
+  name: api-sample
+spec:
+  version: 1.0.0
+  context: /httpbin
+  upstream:
+    host: httpbin.default.svc.cluster.local
+    port: 8000

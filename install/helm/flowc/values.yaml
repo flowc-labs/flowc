@@ -1,0 +1,148 @@
+# Default values for flowc.
+# See the chart README for a description of each key.
+
+# -- Number of flowc replicas. For HA (Mode 4), set to 2+ and enable
+# `config.controller.leader_election.enabled`.
+replicaCount: 1
+
+image:
+  repository: ghcr.io/flowc-labs/flowc
+  pullPolicy: IfNotPresent
+  # -- Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  # -- If empty and create=true, a name is generated from the fullname template.
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+# Container ports exposed on the pod. Must match the ports in `config` below.
+ports:
+  api: 8080
+  xds: 18000
+
+service:
+  type: ClusterIP
+  annotations: {}
+  ports:
+    api: 8080
+    xds: 18000
+
+# HTTP probes hit /health on the REST API port.
+livenessProbe:
+  httpGet:
+    path: /health
+    port: api
+  initialDelaySeconds: 15
+  periodSeconds: 20
+readinessProbe:
+  httpGet:
+    path: /health
+    port: api
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 256Mi
+  requests:
+    cpu: 50m
+    memory: 128Mi
+
+# Pod-level security context. Defaults align with the "restricted" Pod Security Standard.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Toggles whether to install the manager ClusterRole + ClusterRoleBinding.
+# The flowc controller needs these to manage CRDs and provision Envoy deployments.
+rbac:
+  create: true
+
+# Contents of /etc/flowc/config.yaml rendered into a ConfigMap.
+# The defaults below mirror config/flowc-config.k8s.example.yaml (Mode 3).
+# Override any subtree in user values; deep-merge via Helm's normal semantics.
+config:
+  server:
+    api_port: 8080
+    xds_port: 18000
+    read_timeout: "30s"
+    write_timeout: "30s"
+    idle_timeout: "60s"
+    graceful_shutdown: true
+    shutdown_timeout: "10s"
+
+  xds:
+    default_listener_port: 9095
+    default_node_id: "flowc-node"
+    snapshot_cache:
+      ads: true
+    grpc:
+      keepalive_time: "30s"
+      keepalive_timeout: "5s"
+      keepalive_min_time: "5s"
+      keepalive_permit_without_stream: true
+
+  store:
+    backend: kubernetes
+    kubernetes:
+      # Empty = watch the release namespace (set by the chart).
+      namespace: ""
+      kubeconfig: ""
+
+  controller:
+    enabled: true
+    # Empty = provision Envoy proxies in the release namespace.
+    namespace: ""
+    leader_election:
+      enabled: false
+      lease_name: flowc-controller
+    xds:
+      # Populated by the chart to point at the in-cluster Service.
+      address: ""
+      use_tls: false
+    envoy:
+      image: "envoyproxy/envoy:v1.37-latest"
+      image_pull_policy: "IfNotPresent"
+      admin_port: 9901
+    metrics_addr: "0"
+    probe_addr: ":8081"
+
+  logging:
+    level: "info"
+    format: "json"
+    output: "stdout"
+    structured: true
+    enable_caller: false
+    enable_stacktrace: false
+
+  features:
+    external_translators: true
+    openapi_validation: true
+    metrics: false
+    tracing: false
+    rate_limiting: false

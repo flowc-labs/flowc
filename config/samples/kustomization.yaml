@@ -1,12 +1,10 @@
 ## Append samples of your project ##
 resources:
-- flowc.io_v1_gateway.yaml
-- flowc.io_v1_listener.yaml
-- flowc.io_v1_virtualhost.yaml
-- flowc.io_v1_api.yaml
-- flowc.io_v1_deployment.yaml
-- flowc.io_v1_gatewayprofile.yaml
-- flowc.io_v1_gatewaypolicy.yaml
-- flowc.io_v1_apipolicy.yaml
-- flowc.io_v1_backendpolicy.yaml
+- flowc.io_v1alpha1_gateway.yaml
+- flowc.io_v1alpha1_listener.yaml
+- flowc.io_v1alpha1_api.yaml
+- flowc.io_v1alpha1_deployment.yaml
+- flowc.io_v1alpha1_gatewaypolicy.yaml
+- flowc.io_v1alpha1_apipolicy.yaml
+- flowc.io_v1alpha1_backendpolicy.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples

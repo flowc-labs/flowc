@@ -1,0 +1,25 @@
+{{/*
+Build the flowc config with release-namespace defaults injected for any keys
+the user left empty: store.kubernetes.namespace, controller.namespace, and
+controller.xds.address (pointed at our own Service).
+*/}}
+{{- $cfg := deepCopy .Values.config -}}
+{{- if not $cfg.store.kubernetes.namespace -}}
+  {{- $_ := set $cfg.store.kubernetes "namespace" .Release.Namespace -}}
+{{- end -}}
+{{- if not $cfg.controller.namespace -}}
+  {{- $_ := set $cfg.controller "namespace" .Release.Namespace -}}
+{{- end -}}
+{{- if not $cfg.controller.xds.address -}}
+  {{- $addr := printf "%s.%s.svc:%d" (include "flowc.fullname" .) .Release.Namespace (int .Values.ports.xds) -}}
+  {{- $_ := set $cfg.controller.xds "address" $addr -}}
+{{- end -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "flowc.fullname" . }}-config
+  labels:
+    {{- include "flowc.labels" . | nindent 4 }}
+data:
+  config.yaml: |
+    {{- toYaml $cfg | nindent 4 }}

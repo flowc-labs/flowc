@@ -1,0 +1,20 @@
+apiVersion: flowc.io/v1alpha1
+kind: BackendPolicy
+metadata:
+  labels:
+    app.kubernetes.io/name: flowc
+    app.kubernetes.io/managed-by: kustomize
+  name: backendpolicy-sample
+spec:
+  targetRef:
+    kind: API
+    name: api-sample
+  defaults:
+    timeout:
+      connectionTimeout: 5s
+      requestTimeout: 30s
+    retry:
+      attempts: 2
+      retryOn:
+        - 5xx
+        - connect-failure

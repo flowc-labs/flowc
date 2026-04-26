@@ -1,0 +1,17 @@
+apiVersion: flowc.io/v1alpha1
+kind: GatewayPolicy
+metadata:
+  labels:
+    app.kubernetes.io/name: flowc
+    app.kubernetes.io/managed-by: kustomize
+  name: gatewaypolicy-sample
+spec:
+  targetRef:
+    kind: Gateway
+    name: gateway-sample
+  defaults:
+    observability:
+      accessLog:
+        enabled: true
+        format: json
+        path: /dev/stdout

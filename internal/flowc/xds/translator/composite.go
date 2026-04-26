@@ -3,12 +3,12 @@ package translator
 import (
 	"context"
 	"fmt"
+	"regexp"
 
-	listenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	routev3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	matcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/flowc-labs/flowc/internal/flowc/ir"
-	"github.com/flowc-labs/flowc/internal/flowc/server/models"
-	"github.com/flowc-labs/flowc/internal/flowc/xds/resources/listener"
+	"github.com/flowc-labs/flowc/internal/flowc/models"
 	"github.com/flowc-labs/flowc/pkg/logger"
 )
 
@@ -163,39 +163,24 @@ func (t *CompositeTranslator) Translate(ctx context.Context, deployment *models.
 		}
 	}
 
-	// PHASE 5: Generate listeners (if needed)
-	var listeners []*listenerv3.Listener
-	if t.shouldGenerateListener(deployment) {
-		listeners = append(listeners, t.generateListener(routes))
-	}
-
-	// PHASE 6: Apply rate limiting to listeners
-	for _, l := range listeners {
-		if err := t.strategies.RateLimit.ConfigureRateLimit(l, deployment); err != nil {
-			return nil, fmt.Errorf("rate limit configuration failed: %w", err)
-		}
-	}
-
-	// PHASE 7: Apply observability configuration
-	if len(listeners) > 0 {
-		if err := t.strategies.Observability.ConfigureObservability(listeners[0], clusters, deployment); err != nil {
-			return nil, fmt.Errorf("observability configuration failed: %w", err)
-		}
-	}
+	// Listeners are gateway-scoped and built by the dispatch package's
+	// GatewayTranslator from Listener CRs. The per-deployment translation
+	// here only contributes clusters / endpoints / routes; rate-limit and
+	// observability strategies that operated on listeners no longer have
+	// a target at this layer and are skipped — they'll need to be
+	// reworked when actually implemented (today's strategies are no-ops).
 
 	if t.logger != nil {
 		t.logger.WithFields(map[string]any{
-			"clusters":  len(clusters),
-			"routes":    len(routes),
-			"listeners": len(listeners),
+			"clusters": len(clusters),
+			"routes":   len(routes),
 		}).Info("Successfully completed xDS translation")
 	}
 
 	return &XDSResources{
-		Clusters:  clusters,
-		Routes:    routes,
-		Listeners: listeners,
-		Endpoints: nil, // Typically not needed for LOGICAL_DNS clusters
+		Clusters: clusters,
+		Routes:   routes,
+		// Listeners and Endpoints are unused at this layer; left nil.
 	}, nil
 }
 
@@ -220,8 +205,32 @@ func (t *CompositeTranslator) generateRoutes(deployment *models.APIDeployment, i
 				Cluster: clusterNames[0],
 			},
 		}
-		if basePath != "/" {
-			routeAction.PrefixRewrite = "/"
+		// Match: PathSeparatedPrefix matches at path-segment boundaries
+		// (so /httpbingo doesn't false-match /httpbin) and is invalid for
+		// basePath "/", so we fall back to Prefix at the root.
+		//
+		// Rewrite: RegexRewrite (not PrefixRewrite). PrefixRewrite="/"
+		// produces /httpbin/get → "/" + "/get" = "//get", which httpbin's
+		// mux canonicalizes via a 301. PrefixRewrite="" is indistinguishable
+		// from "unset" in proto3 (Envoy skips the rewrite entirely). The
+		// regex pattern `^<basePath>/?` consumes the basePath plus an
+		// optional trailing slash, so substituting "/" gives /get for
+		// /httpbin/get and /httpbin/ → / and bare /httpbin → /.
+		var match *routev3.RouteMatch
+		if basePath == "/" {
+			match = &routev3.RouteMatch{
+				PathSpecifier: &routev3.RouteMatch_Prefix{Prefix: basePath},
+			}
+		} else {
+			match = &routev3.RouteMatch{
+				PathSpecifier: &routev3.RouteMatch_PathSeparatedPrefix{PathSeparatedPrefix: basePath},
+			}
+			routeAction.RegexRewrite = &matcherv3.RegexMatchAndSubstitute{
+				Pattern: &matcherv3.RegexMatcher{
+					Regex: "^" + regexp.QuoteMeta(basePath) + "/?",
+				},
+				Substitution: "/",
+			}
 		}
 		routeName := t.getRouteConfigName()
 		routeConfig := &routev3.RouteConfiguration{
@@ -232,11 +241,7 @@ func (t *CompositeTranslator) generateRoutes(deployment *models.APIDeployment, i
 					Domains: t.getDomains(deployment),
 					Routes: []*routev3.Route{
 						{
-							Match: &routev3.RouteMatch{
-								PathSpecifier: &routev3.RouteMatch_Prefix{
-									Prefix: basePath,
-								},
-							},
+							Match:  match,
 							Action: &routev3.Route_Route{Route: routeAction},
 						},
 					},
@@ -305,78 +310,17 @@ func (t *CompositeTranslator) generateRoutes(deployment *models.APIDeployment, i
 	return []*routev3.RouteConfiguration{routeConfig}, nil
 }
 
-// getRouteConfigName returns the route configuration name that matches the listener's expectation.
-// When listeners/environments are created, they expect route configs named: route_{listenerID}_{environmentName}
+// getRouteConfigName returns the route configuration name. The naming
+// scheme `route_<listenerID>_<virtualHostName>` matches what
+// dispatch/gateway.go::buildListeners points its filter chains at, so
+// route configs and listener filter chains line up by construction.
+//
+// translationContext is set by translateOne in dispatch/translate.go
+// before calling Translate; nil context here is a programming error and
+// will panic. There's no fallback path because this translator is only
+// used through the dispatch flow.
 func (t *CompositeTranslator) getRouteConfigName() string {
-	// If we have translation context, use the environment-aware naming
-	if t.translationContext != nil && t.translationContext.Listener != nil && t.translationContext.VirtualHost != nil {
-		return fmt.Sprintf("route_%s_%s", t.translationContext.Listener.ID, t.translationContext.VirtualHost.Name)
-	}
-
-	// Fallback to default name (backward compatibility)
-	return "flowc_default_route"
-}
-
-// generateListener creates a listener with environment-aware SNI filter chains.
-// This requires translation context to be set via SetTranslationContext().
-func (t *CompositeTranslator) generateListener(routes []*routev3.RouteConfiguration) *listenerv3.Listener {
-	// Translation context is required for environment-based deployments
-	if t.translationContext == nil || t.translationContext.VirtualHost == nil || t.translationContext.Listener == nil {
-		t.logger.Error("Translation context is required but not set; cannot generate listener")
-		// Return nil - this will be caught in the Translate method
-		return nil
-	}
-
-	listenerName := fmt.Sprintf("listener_%d", t.translationContext.Listener.Port)
-	routeName := routes[0].Name // Use first route config name
-
-	// Create listener with SNI filter chain for the environment
-	config := &listener.ListenerConfig{
-		Name:    listenerName,
-		Port:    t.translationContext.Listener.Port,
-		Address: t.translationContext.Listener.Address,
-		HTTP2:   t.translationContext.Listener.HTTP2,
-		FilterChains: []*listener.FilterChainConfig{
-			{
-				Name:            t.translationContext.VirtualHost.Name,
-				Hostname:        t.translationContext.VirtualHost.Hostname,
-				HTTPFilters:     t.translationContext.VirtualHost.HTTPFilters,
-				RouteConfigName: routeName,
-				TLS:             convertTLSConfig(t.translationContext.Listener.TLS),
-			},
-		},
-	}
-
-	l, err := listener.CreateListenerWithFilterChains(config)
-	if err != nil {
-		t.logger.WithError(err).Error("Failed to create listener with filter chains")
-		return nil
-	}
-	return l
-}
-
-// convertTLSConfig converts models.TLSConfig to listener.TLSConfig
-func convertTLSConfig(tlsConfig *models.TLSConfig) *listener.TLSConfig {
-	if tlsConfig == nil {
-		return nil
-	}
-	return &listener.TLSConfig{
-		CertPath:          tlsConfig.CertPath,
-		KeyPath:           tlsConfig.KeyPath,
-		CAPath:            tlsConfig.CAPath,
-		RequireClientCert: tlsConfig.RequireClientCert,
-		MinVersion:        tlsConfig.MinVersion,
-		CipherSuites:      tlsConfig.CipherSuites,
-	}
-}
-
-// shouldGenerateListener determines if a listener should be generated for this deployment.
-// In the hierarchical gateway model, listeners are managed separately at the listener/environment level,
-// not during API deployment. API deployments only generate routes (RDS).
-func (t *CompositeTranslator) shouldGenerateListener(deployment *models.APIDeployment) bool {
-	// Never generate listeners during API deployment - they're managed at the gateway/listener/environment level
-	// TODO: Implement listener management in ListenerService and EnvironmentService
-	return false
+	return fmt.Sprintf("route_%s_%s", t.translationContext.Listener.ID, t.translationContext.VirtualHost.Name)
 }
 
 // generateVirtualHostName creates a virtual host name

@@ -1,0 +1,10 @@
+apiVersion: flowc.io/v1alpha1
+kind: Listener
+metadata:
+  labels:
+    app.kubernetes.io/name: flowc
+    app.kubernetes.io/managed-by: kustomize
+  name: listener-sample
+spec:
+  gatewayRef: gateway-sample
+  port: 8080

@@ -1,0 +1,19 @@
+apiVersion: v2
+name: flowc
+description: Envoy xDS control plane — translates API specs (OpenAPI, gRPC, GraphQL, AsyncAPI) into Envoy xDS resources served over ADS.
+type: application
+# Chart version — bump on every chart change.
+version: 0.1.0
+# Application version — should track the flowc binary release.
+appVersion: "0.1.0"
+kubeVersion: ">=1.28.0-0"
+home: https://github.com/flowc-labs/flowc
+sources:
+  - https://github.com/flowc-labs/flowc
+keywords:
+  - envoy
+  - xds
+  - control-plane
+  - api-gateway
+maintainers:
+  - name: flowc-labs
